@@ -1,0 +1,5 @@
+# Ignore the environment folder
+env/
+*.pyc
+__pycache__/
+.DS_Store
