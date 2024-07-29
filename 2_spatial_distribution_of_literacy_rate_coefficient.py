@@ -39,23 +39,49 @@ gdf.plot(ax=ax, edgecolor='black', facecolor='none', linewidth=0.8)
 merged_gdf.plot(column='Literacy Coefficient', cmap='YlGnBu', linewidth=0.8, ax=ax, edgecolor='0.8', legend=True)
 
 # Add a scale bar
-scalebar = ScaleBar(1, location='lower right')  # Adjust the scale bar to your needs
+scalebar = ScaleBar(1, location='lower right', font_properties={'weight': 'bold', 'size': 10, 'family': 'serif'})  # Adjust the scale bar to your needs
 ax.add_artist(scalebar)
 
 # Add a north arrow
 x, y, arrow_length = 0.95, 0.95, 0.1
 ax.annotate('N', xy=(x, y), xytext=(x, y - arrow_length),
             arrowprops=dict(facecolor='black', width=5, headwidth=15),
-            ha='center', va='center', fontsize=12, xycoords='axes fraction')
+            ha='center', va='center', fontsize=10, xycoords='axes fraction', fontweight='bold', family='serif')
 
 # Add region names for all regions
 for idx, row in gdf.iterrows():
     region_name = row['ADM1_EN']
     if pd.notna(region_name):
         ax.annotate(text=region_name, xy=(row['geometry'].centroid.x, row['geometry'].centroid.y),
-                    horizontalalignment='center', fontsize=8, color='black')
+                    horizontalalignment='center', fontsize=10, color='black', fontweight='normal', family='serif')
+
+
+
+# Set the boundary line width
+ax.spines['top'].set_linewidth(2)
+ax.spines['bottom'].set_linewidth(2)
+ax.spines['left'].set_linewidth(2)
+ax.spines['right'].set_linewidth(2)
+
 
 # Set the title and remove axis
-ax.set_title('Spatial Distribution of Literacy Rate Coefficients in Tanzania', fontdict={'fontsize': '15', 'fontweight': '3'})
+title = 'Spatial Distribution of Literacy Rate Coefficients in Tanzania'
+
+# Save the map
+output_folder = "model_output"
+
+output_path_without_title_pdf = f"{output_folder}/2 - {title}_without_title.pdf"
+output_path_without_title_tif = f"{output_folder}/2 - {title}_without_title.tif"
+
+plt.savefig(output_path_without_title_pdf, format='pdf', bbox_inches='tight')
+plt.savefig(output_path_without_title_tif, format='tiff', bbox_inches='tight')
+
+ax.set_title(title, fontdict={'fontsize': 15, 'fontweight': 'normal', 'family': 'serif'})
+
+output_path_pdf = f"{output_folder}/2- {title}.pdf"
+output_path_tif = f"{output_folder}/2- {title}.tif"
+
+plt.savefig(output_path_pdf, format='pdf', bbox_inches='tight')
+plt.savefig(output_path_tif, format='tiff', bbox_inches='tight')
 
 plt.show()

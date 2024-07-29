@@ -1,3 +1,5 @@
+import os
+
 import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -45,7 +47,7 @@ gdf.plot(ax=ax, edgecolor='black', facecolor='none', linewidth=0.8)
 merged_gdf.plot(column='Income Level', cmap='coolwarm', linewidth=0.8, ax=ax, edgecolor='0.8', legend=True)
 
 # Add a scale bar
-scalebar = ScaleBar(1, location='lower right')  # Adjust the scale bar to your needs
+scalebar = ScaleBar(1, location='lower right', font_properties={'weight': 'bold', 'size': 10, 'family': 'serif'})  # Adjust the scale bar to your needs
 ax.add_artist(scalebar)
 
 # Add a north arrow
@@ -59,10 +61,42 @@ for idx, row in gdf.iterrows():
     region_name = row['ADM1_EN']
     if pd.notna(region_name):
         ax.annotate(text=region_name, xy=(row['geometry'].centroid.x, row['geometry'].centroid.y),
-                    horizontalalignment='center', fontsize=8, color='black')
+                    horizontalalignment='center', fontsize=10, color='black', fontweight='normal', family='serif')
 
 # Add the title and Moran's I statistic
-ax.set_title('Spatial Dependence of Income Levels in Tanzania', fontdict={'fontsize': '15', 'fontweight': '3'})
+title = 'Spatial Dependence of Income Levels in Tanzania'
+
 ax.text(0.5, -0.1, f"Moran's I: {moran.I:.3f} (p-value: {moran.p_sim:.3f})", ha='center', va='center', transform=ax.transAxes, fontsize=12)
+
+# Set the boundary line width
+ax.spines['top'].set_linewidth(2)
+ax.spines['bottom'].set_linewidth(2)
+ax.spines['left'].set_linewidth(2)
+ax.spines['right'].set_linewidth(2)
+
+# Ensure the output folder exists
+output_folder = "model_output"
+os.makedirs(output_folder, exist_ok=True)
+
+# Sanitize the file name
+def sanitize_filename(filename):
+    return "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_')).rstrip()
+
+# Save the map
+sanitized_title = sanitize_filename(title)
+output_path_pdf = os.path.join(output_folder, f"4 - {sanitized_title}.pdf")
+output_path_tif = os.path.join(output_folder, f"4 - {sanitized_title}.tif")
+
+output_path_without_title_pdf = f"{output_folder}/4 - {sanitized_title}_without_title.pdf"
+output_path_without_title_tif = f"{output_folder}/4 - {sanitized_title}_without_title.tif"
+
+plt.savefig(output_path_without_title_pdf, format='pdf', bbox_inches='tight')
+plt.savefig(output_path_without_title_tif, format='tiff', bbox_inches='tight')
+
+ax.set_title(title, fontdict={'fontsize': 15, 'fontweight': 'normal', 'family': 'serif'})
+
+plt.savefig(output_path_pdf, format='pdf', bbox_inches='tight')
+plt.savefig(output_path_tif, format='tiff', bbox_inches='tight')
+
 
 plt.show()

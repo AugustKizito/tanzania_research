@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import fiona
 from shapely.geometry import shape
 from matplotlib_scalebar.scalebar import ScaleBar
+import os
 
 # Define the regions and their corresponding local R^2 values
 regions = ['Arusha', 'Dar es Salaam', 'Pwani', 'Mbeya', 'Singida', 'Kigoma', 'Mwanza']
@@ -39,7 +40,7 @@ gdf.plot(ax=ax, edgecolor='black', facecolor='none', linewidth=0.8)
 merged_gdf.plot(column='Local R^2', cmap='viridis', linewidth=0.8, ax=ax, edgecolor='0.8', legend=True)
 
 # Add a scale bar
-scalebar = ScaleBar(1, location='lower right')  # Adjust the scale bar to your needs
+scalebar = ScaleBar(1, location='lower right', font_properties={'weight': 'bold', 'size': 10, 'family': 'serif'})  # Adjust the scale bar to your needs
 ax.add_artist(scalebar)
 
 # Add a north arrow
@@ -53,9 +54,40 @@ for idx, row in gdf.iterrows():
     region_name = row['ADM1_EN']
     if pd.notna(region_name):
         ax.annotate(text=region_name, xy=(row['geometry'].centroid.x, row['geometry'].centroid.y),
-                    horizontalalignment='center', fontsize=8, color='black')
+                    horizontalalignment='center', fontsize=10, color='black', fontweight='normal', family='serif')
 
 # Set the title and remove axis
-ax.set_title('Local R² Map: Explaining Income Levels in Tanzania', fontdict={'fontsize': '15', 'fontweight': '3'})
+title = 'Local R2 Map: Explaining Income Levels in Tanzania'
+
+
+# Set the boundary line width
+ax.spines['top'].set_linewidth(2)
+ax.spines['bottom'].set_linewidth(2)
+ax.spines['left'].set_linewidth(2)
+ax.spines['right'].set_linewidth(2)
+
+# Ensure the output folder exists
+output_folder = "model_output"
+os.makedirs(output_folder, exist_ok=True)
+
+# Sanitize the file name
+def sanitize_filename(filename):
+    return "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_')).rstrip()
+
+# Save the map
+sanitized_title = sanitize_filename(title)
+
+output_path_pdf = os.path.join(output_folder, f"3 - {sanitized_title}.pdf")
+output_path_tif = os.path.join(output_folder, f"3 - {sanitized_title}.tif")
+output_path_without_title_pdf = f"{output_folder}/3 - {sanitized_title}_without_title.pdf"
+output_path_without_title_tif = f"{output_folder}/3 - {sanitized_title}_without_title.tif"
+
+plt.savefig(output_path_without_title_pdf, format='pdf', bbox_inches='tight')
+plt.savefig(output_path_without_title_tif, format='tiff', bbox_inches='tight')
+
+ax.set_title(title, fontdict={'fontsize': 15, 'fontweight': 'normal', 'family': 'serif'})
+
+plt.savefig(output_path_pdf, format='pdf', bbox_inches='tight')
+plt.savefig(output_path_tif, format='tiff', bbox_inches='tight')
 
 plt.show()

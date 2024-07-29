@@ -3,3 +3,132 @@ env/
 *.pyc
 __pycache__/
 .DS_Store
+| **B: Spatial Analysis and Visualization** | ```python
+# Calculate spatial weights
+w = weights.Queen.from_dataframe(regions)
+
+# Spatial autocorrelation (Moran's I)
+moran = spreg.Moran(regions['poverty_rate'], w)
+print(f"Moran's I: {moran.I}, p-value: {moran.p_sim}")
+
+# Hotspot analysis
+hotspots = spreg.G_Local_Moran(regions['poverty_rate'], w)
+regions['hotspot'] = hotspots.q
+
+# Visualization
+fig, ax = plt.subplots(figsize=(10, 10))
+regions.plot(column='hotspot', cmap='coolwarm', legend=True, ax=ax)
+national_boundary.boundary.plot(ax=ax, edgecolor='k')
+waterbodies.plot(ax=ax, color='blue')
+plt.title('Hotspot Analysis of Poverty Incidence')
+plt.show()
+``` |
+| **C: Spatial Econometric Models** | ```python
+# Spatial Autoregressive (SAR) Model
+# Standardize variables
+scaler = StandardScaler()
+regions[['enrolment_rate', 'literacy_rate', 'income_level']] = scaler.fit_transform(
+    regions[['enrolment_rate', 'literacy_rate', 'income_level']]
+)
+
+# Prepare dependent and independent variables
+y = regions['income_level'].values.reshape(-1, 1)
+X = regions[['enrolment_rate', 'literacy_rate']].values
+
+# Run SAR model
+sar_model = spreg.SAR(y, X, w)
+print(sar_model.summary)
+
+# Geographically Weighted Regression (GWR) Model
+import mgwr.gwr
+from mgwr.sel_bw import Sel_BW
+
+# Select bandwidth for GWR
+coords = list(zip(regions.geometry.centroid.x, regions.geometry.centroid.y))
+gwr_bw = Sel_BW(coords, y, X).search()
+
+# Run GWR model
+gwr_model = mgwr.gwr.GWR(coords, y, X, gwr_bw)
+gwr_results = gwr_model.fit()
+
+# Print results
+print(gwr_results.summary())
+
+# Add GWR results to the regions GeoDataFrame
+regions['local_r2'] = gwr_results.localR2
+``` |
+| **D: Additional Visualizations** | ```python
+# Plot Local R² values from GWR
+fig, ax = plt.subplots(figsize=(10, 10))
+regions.plot(column='local_r2', cmap='YlGnBu', legend=True, ax=ax)
+national_boundary.boundary.plot(ax=ax, edgecolor='k')
+waterbodies.plot(ax=ax, color='blue')
+plt.title('Local R² Values from GWR Analysis')
+plt.show()
+``` |
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+fig, ax = plt.subplots(figsize=(50, 40))
+
+# Define the positions of the boxes and the connecting lines
+positions = {
+    'Research Design': (0.1, 0.9),
+    'Sample Selection': (0.3, 0.9),
+    'Data Collection\nand Preparation': (0.5, 0.9),
+    'Data Aggregation\nand Processing': (0.7, 0.9),
+    'Performance Index\nCalculation': (0.9, 0.9),
+    'Geospatial Data\nIntegration': (0.1, 0.7),
+    'Spatial Analysis\nTechniques': (0.3, 0.7),
+    'Spatial Regression\nAnalysis': (0.5, 0.7),
+    'SAR Model': (0.7, 0.7),
+    'GWR Model': (0.9, 0.7),
+    'Data Analysis Tools': (0.5, 0.5),
+    'Results Interpretation\nand Policy Recommendations': (0.5, 0.3)
+}
+
+# Define the box properties with different colors
+box_colors = {
+    'Research Design': 'lightblue',
+    'Sample Selection': 'lightgreen',
+    'Data Collection\nand Preparation': 'lightyellow',
+    'Data Aggregation\nand Processing': 'lightcoral',
+    'Performance Index\nCalculation': 'lightpink',
+    'Geospatial Data\nIntegration': 'lightcyan',
+    'Spatial Analysis\nTechniques': 'lightgoldenrodyellow',
+    'Spatial Regression\nAnalysis': 'lightgray',
+    'SAR Model': 'lightsteelblue',
+    'GWR Model': 'lightseagreen',
+    'Data Analysis Tools': 'lightsalmon',
+    'Results Interpretation\nand Policy Recommendations': 'lightgreen'
+}
+
+# Add the boxes
+for label, (x, y) in positions.items():
+    ax.text(x, y, label, ha='center', va='center', fontsize=28, bbox=dict(boxstyle="round,pad=0.8", edgecolor='black', facecolor=box_colors[label]))
+
+# Draw arrows between the boxes with larger arrow heads and non-crossing paths
+def draw_arrow(start, end, connectionstyle):
+    ax.annotate('', xy=positions[end], xytext=positions[start],
+                arrowprops=dict(arrowstyle="->,head_width=1.0,head_length=1.5", color='black', lw=3, connectionstyle=connectionstyle))
+
+draw_arrow('Research Design', 'Sample Selection', "arc3,rad=0")
+draw_arrow('Sample Selection', 'Data Collection\nand Preparation', "arc3,rad=0")
+draw_arrow('Data Collection\nand Preparation', 'Data Aggregation\nand Processing', "arc3,rad=0")
+draw_arrow('Data Aggregation\nand Processing', 'Performance Index\nCalculation', "arc3,rad=0")
+draw_arrow('Performance Index\nCalculation', 'Geospatial Data\nIntegration', "arc3,rad=0.3")
+draw_arrow('Geospatial Data\nIntegration', 'Spatial Analysis\nTechniques', "arc3,rad=0")
+draw_arrow('Spatial Analysis\nTechniques', 'Spatial Regression\nAnalysis', "arc3,rad=0")
+draw_arrow('Spatial Regression\nAnalysis', 'SAR Model', "arc3,rad=0")
+draw_arrow('Spatial Regression\nAnalysis', 'GWR Model', "arc3,rad=0")
+draw_arrow('SAR Model', 'Data Analysis Tools', "arc3,rad=0.3")
+draw_arrow('GWR Model', 'Data Analysis Tools', "arc3,rad=-0.3")
+draw_arrow('Data Analysis Tools', 'Results Interpretation\nand Policy Recommendations', "arc3,rad=0")
+
+# Set the title and hide the axes
+plt.title('Research Methodology Flow', fontsize=34)
+ax.axis('off')
+
+plt.show()
+ve space while maintaining readability.
