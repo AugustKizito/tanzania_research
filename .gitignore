@@ -129,6 +129,34 @@ draw_arrow('Data Analysis Tools', 'Results Interpretation\nand Policy Recommenda
 # Set the title and hide the axes
 plt.title('Research Methodology Flow', fontsize=34)
 ax.axis('off')
++-------------------------------------------------------------+
+|               [ Data Collection and Preparation ]           |
+|   (Primary Data and Secondary Data Collection)              |
++-------------------------------------------------------------+
+| Household Surveys (Primary Data)    |  Secondary Data from   |
+|                                     |  Various Sources       |
+|                                     |  (TASAF, NBS, Ministries)|
++-------------------------------------------------------------+
+|               [ Data Aggregation and Processing ]           |
+|              (Green background)                             |
++-------------------------------------------------------------+
+|                    [ Data Analysis ]                        |
+|         (Blue background for SAR, GWR, and Durbin)          |
++-------------------------------------------------------------+
+| SAR Model (Spatial Autoregressive)  |  GWR Model (Geographically|
+|                                     |  Weighted Regression)    |
+| Durbin Model (Spatial Durbin)       |                         |
++-------------------------------------------------------------+
+|    [ Performance Index Calculation and Validation ]         |
+|             (Orange background)                             |
++-------------------------------------------------------------+
+|                      [ Results ]                            |
+|         (Yellow background for Mapping and Analysis)        |
++-------------------------------------------------------------+
+| Spatial Mapping (Visualizing Patterns)  |  Statistical Analysis |
+|                                        |  (Correlation Coefficients) |
+| Comparative Assessment  |  Recommendations                   |
++-------------------------------------------------------------+
 
 plt.show()
 ve space while maintaining readability.
