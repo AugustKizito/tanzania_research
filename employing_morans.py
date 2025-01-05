@@ -12,6 +12,8 @@ from pysal.lib import weights
 from pysal.model import spreg
 from statsmodels.api import add_constant
 from shapely.ops import nearest_points
+import logging
+
 
 # Find the nearest geometry for each island region
 def find_nearest_geometry(island, gdf):
@@ -23,6 +25,7 @@ def find_nearest_geometry(island, gdf):
     nearest_region = gdf[gdf.geometry == nearest_geom]
     return nearest_region
 
+
 # 2. Data Preparation
 
 # 2.1. Define the Real Data
@@ -30,8 +33,16 @@ def find_nearest_geometry(island, gdf):
 # Define the data as a dictionary
 
 pd.set_option('display.max_columns', None)  # Show all columns
-pd.set_option('display.max_rows', None)     # Show all rows (if needed)
+pd.set_option('display.max_rows', None)  # Show all rows (if needed)
 
+# Set up the logger
+logging.basicConfig(
+    filename='spatial_analysis.log',  # Log file name
+    level=logging.INFO,  # Logging level
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Log format
+    filemode='w'  # Overwrite the log file each run
+)
+logger = logging.getLogger()
 
 data = {
     'ADM1_EN': [
@@ -68,9 +79,9 @@ real_data = pd.DataFrame(data)
 # 2.1.2. Data Cleaning
 
 # Check for any anomalies or incorrect formats
-#print("\nData Types:")
-#print(real_data.dtypes)
-#print("\n\n\n")
+# print("\nData Types:")
+# print(real_data.dtypes)
+# print("\n\n\n")
 
 # Convert columns to appropriate data types
 numeric_columns = [
@@ -87,15 +98,15 @@ for col in numeric_columns:
     real_data[col] = pd.to_numeric(real_data[col], errors='coerce')
 
 # Check for missing values
-#print("\nMissing Values:")
-#print(real_data[numeric_columns].isnull().sum())
+# print("\nMissing Values:")
+# print(real_data[numeric_columns].isnull().sum())
 
 # Handle missing values if any (e.g., drop rows with missing data)
 real_data = real_data.dropna(subset=numeric_columns)
 
 # Verify the cleaned data
-#print("\nCleaned Real Data:")
-#print(real_data)
+# print("\nCleaned Real Data:")
+# print(real_data)
 
 # 2.1.6. Standardize 'Region' Names
 
@@ -103,8 +114,8 @@ real_data = real_data.dropna(subset=numeric_columns)
 real_data['Region'] = real_data['ADM1_EN'].str.strip().str.lower()
 
 # Check the standardized names
-print("\nStandardized Region Names:")
-print(real_data['Region'].unique())
+# print("\nStandardized Region Names:")
+# print(real_data['Region'].unique())
 
 # 2.2. Load and Merge Geospatial Data (Shapefiles)
 
@@ -112,7 +123,6 @@ print(real_data['Region'].unique())
 
 # List of region names matching shapefile subdirectory names
 regions_list = ['Arusha', 'Dar-es-salaam', 'Kigoma', 'Mbeya', 'Mwanza', 'Pwani', 'Singida']
-
 
 # Initialize an empty list to store individual GeoDataFrames
 gdf_list = []
@@ -131,8 +141,8 @@ gdf['Region'] = gdf['ADM1_EN'].str.strip().str.lower()
 merged_gdf = gdf.merge(real_data, on='Region', how='left')
 
 # Output the column names of the merged GeoDataFrame
-print("Columns in merged_gdf:")
-print("\n".join(merged_gdf.columns.tolist()))
+# print("Columns in merged_gdf:")
+# print("\n".join(merged_gdf.columns.tolist()))
 
 # Define the list of regions to keep
 regions_to_keep = ['arusha', 'dar-es-salaam', 'kigoma', 'mbeya', 'mwanza', 'pwani', 'singida']
@@ -147,15 +157,14 @@ if not missing_poverty.empty:
     print("Missing Poverty_Level data for the following regions:")
     print(missing_poverty[['Region', 'ADM1_EN_x']])
 else:
-    print("No missing Poverty_Level data found.")
+    print("No missing Poverty_Level data found.\n")
 
-print("\n\n\n")
-print('ADM1_EN_x', 'ADM1_EN_y')
-print(merged_gdf[['ADM1_EN_x', 'ADM1_EN_y']])
+# print('ADM1_EN_x', 'ADM1_EN_y')
+# print(merged_gdf[['ADM1_EN_x', 'ADM1_EN_y']])
 
 # Verify the merge
-#print("\nMerged GeoDataFrame:")
-#print(merged_gdf.head())
+# print("\nMerged GeoDataFrame:")
+# print(merged_gdf.head())
 
 # 2.3. Coordinate Reference System (CRS) Consistency
 
@@ -207,14 +216,14 @@ for island_index in w.islands:
         w.weights[island_index].append(1)  # Add weight for the new neighbor
         w.weights[nearest_index].append(1)  # Add weight for the new neighbor
 
-#w.set_self_neighbors()  # Add self-neighbors for isolated regions
+# w.set_self_neighbors()  # Add self-neighbors for isolated regions
 
 # Standardize the weights (row-standardized)
 w.transform = 'r'
 
 # Inspect the weights
-print("\nSpatial Weights Matrix:")
-print(w)
+# print("\nSpatial Weights Matrix:")
+# print(w)
 
 # 3.2. Calculate Global Moran’s I
 
@@ -223,6 +232,9 @@ poverty_level = merged_gdf['Poverty_Level'].values
 
 # Calculate Global Moran's I for Poverty Level
 moran = esda.Moran(poverty_level, w)
+logger.info(f"Global Moran's I: {moran.I}")
+logger.info(f"Global Moran's p-value: {moran.p_sim}")
+logger.info(f"Global Moran's Z-score: {moran.z_sim}")
 print(f"\nGlobal Moran's I: {moran.I}")
 print(f"p-value: {moran.p_sim}")
 print(f"Z-score: {moran.z_sim}")
@@ -242,9 +254,15 @@ merged_gdf.loc[(lisa.q == 3) & (lisa.p_sim < 0.05), 'LISA_Cluster'] = 'Low-Low'
 merged_gdf.loc[(lisa.q == 2) & (lisa.p_sim < 0.05), 'LISA_Cluster'] = 'High-Low'
 merged_gdf.loc[(lisa.q == 4) & (lisa.p_sim < 0.05), 'LISA_Cluster'] = 'Low-High'
 
-# Display the clusters
-print("\nLISA Clusters:")
-print(merged_gdf[['ADM1_EN_x', 'LISA_Cluster']])
+try:
+    # Log LISA results
+    logger.info("LISA Results:")
+    lisa_results = merged_gdf[['ADM1_EN_x', 'LISA_Cluster']]
+    logger.info("\n" + lisa_results.to_string(index=False))
+    print("\nLISA Clusters (Tabular Format):")
+    print(lisa_results.to_string(index=False))
+except Exception as e:
+    logger.error(f"Error calculating LISA results: {e}")
 
 # 3.4. Visualize LISA Clusters
 
@@ -278,7 +296,7 @@ legend_patches = [
 plt.legend(handles=legend_patches, loc='upper right')
 plt.title('LISA Clusters for Poverty Level')
 plt.axis('off')
-plt.show()
+# plt.show()
 print("\n\n\n\n\n")
 
 # 4. Spatial Regression Modeling
@@ -344,11 +362,14 @@ else:
         )
 
         # Display the summary of the SAR model
+        logger.info("Spatial Lag Model (SAR) Summary:")
+        logger.info(sar_model.summary)
         print("\nSpatial Lag Model (SAR) Summary:")
         print(sar_model.summary)
 
     except Exception as e:
         print(f"Error while fitting SAR model: {e}")
+        logger.error(f"Error fitting SAR model: {e}")
 
     # 4.3. Spatial Durbin Model (SDM)
 
@@ -362,6 +383,8 @@ else:
         )
 
         # Display the summary of the SDM model
+        logger.info("Spatial Durbin Model (SDM) Summary:")
+        logger.info(sdm_model.summary)
         print("\nSpatial Durbin Model (SDM) Summary:")
         print(sdm_model.summary)
 
@@ -371,6 +394,10 @@ else:
     # 4.4. Compare Models (Based on AIC)
 
     try:
+        # Log Model Comparison Results
+        logger.info("\nModel Comparison based on AIC:")
+        logger.info(f"SAR Model AIC: {sar_model.aic}")
+        logger.info(f"SDM Model AIC: {sdm_model.aic}")
         print("\nModel Comparison based on AIC:")
         print(f"SAR Model AIC: {sar_model.aic}")
         print(f"SDM Model AIC: {sdm_model.aic}")
@@ -387,6 +414,7 @@ else:
 
     except Exception as e:
         print(f"Error during model comparison: {e}")
+        logger.error(f"Error comparing models: {e}")
 
     # 5. Extract and Display Coefficients
 
@@ -399,11 +427,13 @@ else:
             'p_Value': selected_model.p_values.flatten()
         })
 
+        logger.info("\nSelected Model Coefficients:")
+        logger.info("\n" + coefficients.to_string(index=False))
         print(f"\n{model_type} Model Coefficients:")
         print(coefficients)
 
     except Exception as e:
-        print(f"Error while extracting coefficients: {e}")
+        logger.error(f"Error extracting coefficients: {e}")
 
     # 6. Visualization of Regression Results
 
@@ -432,6 +462,9 @@ else:
         print(f"\nMoran's I for {model_type} Residuals: {moran_residuals.I}")
         print(f"p-value: {moran_residuals.p_sim}")
         print(f"Z-score: {moran_residuals.z_sim}")
+        logger.info(f"\nMoran's I for {model_type} Residuals: {moran_residuals.I}")
+        logger.info(f"p-value: {moran_residuals.p_sim}")
+        logger.info(f"Z-score: {moran_residuals.z_sim}")
 
     except Exception as e:
         print(f"Error while calculating Moran's I for residuals: {e}")
@@ -450,7 +483,7 @@ plt.title(f'{model_type} Model Coefficients')
 plt.xlabel('Coefficient Value')
 plt.ylabel('Variables')
 plt.axvline(x=0, color='black', linewidth=0.8)
-plt.show()
+# plt.show()
 
 # 7.2. Heatmap of Coefficients (Optional)
 

@@ -1,0 +1,105 @@
+2025-01-05 16:14:04,449 - INFO - Global Moran's I: 0.7616931662630309
+2025-01-05 16:14:04,450 - INFO - Global Moran's p-value: 0.056
+2025-01-05 16:14:04,450 - INFO - Global Moran's Z-score: 1.7790880723097269
+2025-01-05 16:14:07,424 - INFO - LISA Results:
+2025-01-05 16:14:07,425 - INFO - 
+    ADM1_EN_x    LISA_Cluster
+       Arusha Not Significant
+Dar-es-salaam Not Significant
+       Kigoma        Low-High
+        Mbeya Not Significant
+       Mwanza        Low-High
+        Pwani         Low-Low
+      Singida Not Significant
+2025-01-05 16:14:07,607 - INFO - Spatial Lag Model (SAR) Summary:
+2025-01-05 16:14:07,607 - INFO - REGRESSION RESULTS
+------------------
+
+SUMMARY OF OUTPUT: SPATIAL TWO STAGE LEAST SQUARES
+--------------------------------------------------
+Data set            :     Dataset
+Weights matrix      :     unknown
+Dependent Variable  :Poverty_Level                Number of Observations:           7
+Mean dependent var  :      4.0600                Number of Variables   :           7
+S.D. dependent var  :      1.4886                Degrees of Freedom    :           0
+Pseudo R-squared    :      1.0000
+Spatial Pseudo R-squared:  1.0000
+
+------------------------------------------------------------------------------------
+            Variable     Coefficient       Std.Error     z-Statistic     Probability
+------------------------------------------------------------------------------------
+            CONSTANT         7.74167    
+Total Health Facilities         0.00550         0.00000    170575273611.66599         0.00000
+Total Access to Water %         0.04340         0.00000    388682653283.26129         0.00000
+Total Access to Electricity        -0.06697         0.00000    -545102105107.83429         0.00000
+Average Max Annual Temperature        -0.41831    
+Average Min Annual Temperature         0.10443         0.00000    817104782041.84741         0.00000
+     W_Poverty_Level        -0.18664    
+------------------------------------------------------------------------------------
+Instrumented: W_Poverty_Level
+Instruments: W_Average Max Annual Temperature, W_Average Min Annual
+             Temperature, W_Total Access to Electricity, W_Total Access to
+             Water %, W_Total Health Facilities
+Warning: Variable(s) ['const'] removed for being constant.
+
+DIAGNOSTICS FOR SPATIAL DEPENDENCE
+TEST                              DF         VALUE           PROB
+Anselin-Kelejian Test             1          0.366           0.5454
+
+SPATIAL LAG MODEL IMPACTS
+Impacts computed using the 'simple' method.
+            Variable         Direct        Indirect          Total
+Total Health Facilities         0.0055         -0.0009          0.0046
+Total Access to Water %         0.0434         -0.0068          0.0366
+Total Access to Electricity        -0.0670          0.0105         -0.0564
+Average Max Annual Temperature        -0.4183          0.0658         -0.3525
+Average Min Annual Temperature         0.1044         -0.0164          0.0880
+================================ END OF REPORT =====================================
+2025-01-05 16:14:07,617 - INFO - Spatial Durbin Model (SDM) Summary:
+2025-01-05 16:14:07,617 - INFO - REGRESSION RESULTS
+------------------
+
+SUMMARY OF OUTPUT: SPATIAL TWO STAGE LEAST SQUARES
+--------------------------------------------------
+Data set            :     Dataset
+Weights matrix      :     unknown
+Dependent Variable  :Poverty_Level                Number of Observations:           7
+Mean dependent var  :      4.0600                Number of Variables   :           7
+S.D. dependent var  :      1.4886                Degrees of Freedom    :           0
+Pseudo R-squared    :      1.0000
+Spatial Pseudo R-squared:  1.0000
+
+------------------------------------------------------------------------------------
+            Variable     Coefficient       Std.Error     z-Statistic     Probability
+------------------------------------------------------------------------------------
+            CONSTANT         7.74167    
+Total Health Facilities         0.00550         0.00000    170575273611.66599         0.00000
+Total Access to Water %         0.04340         0.00000    388682653283.26129         0.00000
+Total Access to Electricity        -0.06697         0.00000    -545102105107.83429         0.00000
+Average Max Annual Temperature        -0.41831    
+Average Min Annual Temperature         0.10443         0.00000    817104782041.84741         0.00000
+     W_Poverty_Level        -0.18664    
+------------------------------------------------------------------------------------
+Instrumented: W_Poverty_Level
+Instruments: W_Average Max Annual Temperature, W_Average Min Annual
+             Temperature, W_Total Access to Electricity, W_Total Access to
+             Water %, W_Total Health Facilities
+Warning: Variable(s) ['const'] removed for being constant.
+
+DIAGNOSTICS FOR SPATIAL DEPENDENCE
+TEST                              DF         VALUE           PROB
+Anselin-Kelejian Test             1          0.366           0.5454
+
+SPATIAL LAG MODEL IMPACTS
+Impacts computed using the 'simple' method.
+            Variable         Direct        Indirect          Total
+Total Health Facilities         0.0055         -0.0009          0.0046
+Total Access to Water %         0.0434         -0.0068          0.0366
+Total Access to Electricity        -0.0670          0.0105         -0.0564
+Average Max Annual Temperature        -0.4183          0.0658         -0.3525
+Average Min Annual Temperature         0.1044         -0.0164          0.0880
+================================ END OF REPORT =====================================
+2025-01-05 16:14:07,617 - INFO - 
+Model Comparison based on AIC:
+2025-01-05 16:14:07,617 - ERROR - Error comparing models: 'GM_Lag' object has no attribute 'aic'
+2025-01-05 16:14:07,617 - ERROR - Error extracting coefficients: name 'selected_model' is not defined
