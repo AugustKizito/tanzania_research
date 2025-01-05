@@ -11,6 +11,17 @@ from pysal.explore import esda
 from pysal.lib import weights
 from pysal.model import spreg
 from statsmodels.api import add_constant
+from shapely.ops import nearest_points
+
+# Find the nearest geometry for each island region
+def find_nearest_geometry(island, gdf):
+    island_geom = island.geometry
+    other_geometries = gdf[gdf.index != island.name].geometry
+    # Use `union_all()` for compatibility with newer versions of shapely
+    nearest_geom = nearest_points(island_geom, other_geometries.union_all())[1]
+    # Find the nearest region using the geometry match
+    nearest_region = gdf[gdf.geometry == nearest_geom]
+    return nearest_region
 
 # 2. Data Preparation
 
@@ -25,14 +36,14 @@ pd.set_option('display.max_rows', None)     # Show all rows (if needed)
 data = {
     'ADM1_EN': [
         'Arusha',
-        'Dar_es_salaam',
+        'Dar-es-salaam',
         'Kigoma',
         'Mbeya',
         'Mwanza',
         'Pwani',
         'Singida'
     ],
-    'Poverty%': [4.9, 1.44, 5.47, 3.98, 5.44, 2.76, 4.43],
+    'Poverty_Level': [4.9, 1.44, 5.47, 3.98, 5.44, 2.76, 4.43],
     'Total Health Facilities': [310, 454, 246, 362, 376, 365, 229],
     'Total Access to Water %': [87.3, 97.5, 64.5, 76.9, 71.7, 72.2, 47.2],
     'Total Access to Electricity': [52.3, 86, 17.7, 44.7, 37.7, 41.9, 21.2],
@@ -63,7 +74,7 @@ real_data = pd.DataFrame(data)
 
 # Convert columns to appropriate data types
 numeric_columns = [
-    'Poverty%', 'Total Health Facilities', 'Total Access to Water %',
+    'Poverty_Level', 'Total Health Facilities', 'Total Access to Water %',
     'Total Access to Electricity', 'Average Max Annual Temperature',
     'Average Min Annual Temperature', 'Average Annual Rainfall',
     'Change Urban Expansion (km²)', 'Crop Land Vegetation Change (km²)',
@@ -100,7 +111,7 @@ print(real_data['Region'].unique())
 # Directory containing all region shapefiles
 
 # List of region names matching shapefile subdirectory names
-regions_list = ['Arusha', 'Dar_es_salaam', 'Kigoma', 'Mbeya', 'Mwanza', 'Pwani', 'Singida']
+regions_list = ['Arusha', 'Dar-es-salaam', 'Kigoma', 'Mbeya', 'Mwanza', 'Pwani', 'Singida']
 
 
 # Initialize an empty list to store individual GeoDataFrames
@@ -114,10 +125,21 @@ gdf = gpd.read_file(regions_shapefile_path)
 
 # Standardize the 'Region' column in the GeoDataFrame
 gdf['Region'] = gdf['ADM1_EN'].str.strip().str.lower()
-#print("Regions are : \n\n", gdf['Region'], "\n\n\n")
+print("Regions are : \n\n", gdf['Region'], "\n\n\n")
 
 # Merge the GeoDataFrame with the real data DataFrame
 merged_gdf = gdf.merge(real_data, on='Region', how='left')
+
+# Output the column names of the merged GeoDataFrame
+print("Columns in merged_gdf:")
+print("\n".join(merged_gdf.columns.tolist()))
+
+# Check for missing Poverty_Level
+missing_poverty = merged_gdf[merged_gdf['Poverty_Level'].isnull()]
+print("Missing Poverty_Level data for the following regions:")
+print(missing_poverty[['Region', 'ADM1_EN_x']])  # Adjust to use 'ADM1_EN_x' or 'ADM1_EN_y' as appropriate
+
+
 # Define the list of regions to keep
 regions_to_keep = ['arusha', 'dar-es-salaam', 'kigoma', 'mbeya', 'mwanza', 'pwani', 'singida']
 
@@ -165,7 +187,20 @@ else:
 # 3.1. Create Spatial Weights Matrix
 
 # Create spatial weights matrix using Queen contiguity
-w = weights.Queen.from_dataframe(merged_gdf)
+w = weights.Queen.from_dataframe(merged_gdf, use_index=True)
+for island_index in w.islands:
+    island = merged_gdf.loc[island_index]
+    nearest_region = find_nearest_geometry(island, merged_gdf)
+    if not nearest_region.empty:
+        nearest_index = nearest_region.index[0]
+        print(f"Island {island['ADM1_EN']} can be merged with {nearest_region['ADM1_EN'].values[0]}")
+        # Add neighbors to the weights matrix
+        w.neighbors[island_index].append(nearest_index)
+        w.neighbors[nearest_index].append(island_index)
+        w.weights[island_index].append(1)  # Add weight for the new neighbor
+        w.weights[nearest_index].append(1)  # Add weight for the new neighbor
+
+#w.set_self_neighbors()  # Add self-neighbors for isolated regions
 
 # Standardize the weights (row-standardized)
 w.transform = 'r'
@@ -183,7 +218,7 @@ poverty_level = merged_gdf['Poverty_Level'].values
 moran = esda.Moran(poverty_level, w)
 print(f"\nGlobal Moran's I: {moran.I}")
 print(f"p-value: {moran.p_sim}")
-print(f"Z-score: {moran.Z_sim}")
+print(f"Z-score: {moran.z_sim}")
 
 # 3.3. Local Moran’s I (LISA) Analysis
 
