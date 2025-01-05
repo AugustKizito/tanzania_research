@@ -99,7 +99,7 @@ real_data = real_data.dropna(subset=numeric_columns)
 
 # 2.1.6. Standardize 'Region' Names
 
-# Standardize the 'ADM1_EN' column in real_data
+# Standardize the 'ADM1_EN_x' column in real_data
 real_data['Region'] = real_data['ADM1_EN'].str.strip().str.lower()
 
 # Check the standardized names
@@ -125,26 +125,33 @@ gdf = gpd.read_file(regions_shapefile_path)
 
 # Standardize the 'Region' column in the GeoDataFrame
 gdf['Region'] = gdf['ADM1_EN'].str.strip().str.lower()
-print("Regions are : \n\n", gdf['Region'], "\n\n\n")
+# print("Regions are : \n\n", gdf['Region'], "\n\n\n")
 
 # Merge the GeoDataFrame with the real data DataFrame
 merged_gdf = gdf.merge(real_data, on='Region', how='left')
 
 # Output the column names of the merged GeoDataFrame
-print("Columns in merged_gdf:")
-print("\n".join(merged_gdf.columns.tolist()))
-
-# Check for missing Poverty_Level
-missing_poverty = merged_gdf[merged_gdf['Poverty_Level'].isnull()]
-print("Missing Poverty_Level data for the following regions:")
-print(missing_poverty[['Region', 'ADM1_EN_x']])  # Adjust to use 'ADM1_EN_x' or 'ADM1_EN_y' as appropriate
-
+# print("Columns in merged_gdf:")
+# print("\n".join(merged_gdf.columns.tolist()))
 
 # Define the list of regions to keep
 regions_to_keep = ['arusha', 'dar-es-salaam', 'kigoma', 'mbeya', 'mwanza', 'pwani', 'singida']
 
 # Filter the merged GeoDataFrame to include only the specified regions
 merged_gdf = merged_gdf[merged_gdf['Region'].isin(regions_to_keep)]
+
+# Check for missing Poverty_Level
+missing_poverty = merged_gdf[merged_gdf['Poverty_Level'].isnull()]
+# Print only if there are missing entries
+if not missing_poverty.empty:
+    print("Missing Poverty_Level data for the following regions:")
+    print(missing_poverty[['Region', 'ADM1_EN_x']])
+else:
+    print("No missing Poverty_Level data found.")
+
+print("\n\n\n")
+print('ADM1_EN_x', 'ADM1_EN_y')
+print(merged_gdf[['ADM1_EN_x', 'ADM1_EN_y']])
 
 # Verify the merge
 #print("\nMerged GeoDataFrame:")
@@ -193,7 +200,7 @@ for island_index in w.islands:
     nearest_region = find_nearest_geometry(island, merged_gdf)
     if not nearest_region.empty:
         nearest_index = nearest_region.index[0]
-        print(f"Island {island['ADM1_EN']} can be merged with {nearest_region['ADM1_EN'].values[0]}")
+        print(f"Island {island['ADM1_EN_x']} can be merged with {nearest_region['ADM1_EN_x'].values[0]}")
         # Add neighbors to the weights matrix
         w.neighbors[island_index].append(nearest_index)
         w.neighbors[nearest_index].append(island_index)
@@ -237,7 +244,7 @@ merged_gdf.loc[(lisa.q == 4) & (lisa.p_sim < 0.05), 'LISA_Cluster'] = 'Low-High'
 
 # Display the clusters
 print("\nLISA Clusters:")
-print(merged_gdf[['ADM1_EN', 'LISA_Cluster']])
+print(merged_gdf[['ADM1_EN_x', 'LISA_Cluster']])
 
 # 3.4. Visualize LISA Clusters
 
