@@ -1,8 +1,8 @@
-2025-01-05 16:14:04,449 - INFO - Global Moran's I: 0.7616931662630309
-2025-01-05 16:14:04,450 - INFO - Global Moran's p-value: 0.056
-2025-01-05 16:14:04,450 - INFO - Global Moran's Z-score: 1.7790880723097269
-2025-01-05 16:14:07,424 - INFO - LISA Results:
-2025-01-05 16:14:07,425 - INFO - 
+2025-01-05 17:12:42,034 - INFO - Global Moran's I: 0.7616931662630309
+2025-01-05 17:12:42,034 - INFO - Global Moran's p-value: 0.055
+2025-01-05 17:12:42,034 - INFO - Global Moran's Z-score: 1.791329282944092
+2025-01-05 17:12:44,938 - INFO - LISA Results:
+2025-01-05 17:12:44,940 - INFO - 
     ADM1_EN_x    LISA_Cluster
        Arusha Not Significant
 Dar-es-salaam Not Significant
@@ -11,8 +11,8 @@ Dar-es-salaam Not Significant
        Mwanza        Low-High
         Pwani         Low-Low
       Singida Not Significant
-2025-01-05 16:14:07,607 - INFO - Spatial Lag Model (SAR) Summary:
-2025-01-05 16:14:07,607 - INFO - REGRESSION RESULTS
+2025-01-05 17:12:45,115 - INFO - Spatial Lag Model (SAR) Summary:
+2025-01-05 17:12:45,115 - INFO - REGRESSION RESULTS
 ------------------
 
 SUMMARY OF OUTPUT: SPATIAL TWO STAGE LEAST SQUARES
@@ -55,8 +55,8 @@ Total Access to Electricity        -0.0670          0.0105         -0.0564
 Average Max Annual Temperature        -0.4183          0.0658         -0.3525
 Average Min Annual Temperature         0.1044         -0.0164          0.0880
 ================================ END OF REPORT =====================================
-2025-01-05 16:14:07,617 - INFO - Spatial Durbin Model (SDM) Summary:
-2025-01-05 16:14:07,617 - INFO - REGRESSION RESULTS
+2025-01-05 17:12:45,125 - INFO - Spatial Durbin Model (SDM) Summary:
+2025-01-05 17:12:45,125 - INFO - REGRESSION RESULTS
 ------------------
 
 SUMMARY OF OUTPUT: SPATIAL TWO STAGE LEAST SQUARES
@@ -99,7 +99,8 @@ Total Access to Electricity        -0.0670          0.0105         -0.0564
 Average Max Annual Temperature        -0.4183          0.0658         -0.3525
 Average Min Annual Temperature         0.1044         -0.0164          0.0880
 ================================ END OF REPORT =====================================
-2025-01-05 16:14:07,617 - INFO - 
-Model Comparison based on AIC:
-2025-01-05 16:14:07,617 - ERROR - Error comparing models: 'GM_Lag' object has no attribute 'aic'
-2025-01-05 16:14:07,617 - ERROR - Error extracting coefficients: name 'selected_model' is not defined
+2025-01-05 17:12:45,125 - ERROR - Error extracting coefficients: 'GM_Lag' object has no attribute 'std_errs'
+2025-01-05 17:13:17,904 - INFO - 
+Moran's I for SDM Residuals: -0.04833021710499503
+2025-01-05 17:13:17,905 - INFO - p-value: 0.406
+2025-01-05 17:13:17,905 - INFO - Z-score: 0.24062402962677906

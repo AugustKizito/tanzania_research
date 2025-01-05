@@ -366,6 +366,11 @@ else:
         logger.info(sar_model.summary)
         print("\nSpatial Lag Model (SAR) Summary:")
         print(sar_model.summary)
+        # Print all attributes and methods of the SAR model
+        print("\nAttributes and Methods of SAR Model:")
+        print(dir(sar_model))
+        print("finished printing sar attributes")
+
 
     except Exception as e:
         print(f"Error while fitting SAR model: {e}")
@@ -392,32 +397,45 @@ else:
         print(f"Error while fitting SDM model: {e}")
 
     # 4.4. Compare Models (Based on AIC)
-
-    try:
-        # Log Model Comparison Results
-        logger.info("\nModel Comparison based on AIC:")
-        logger.info(f"SAR Model AIC: {sar_model.aic}")
-        logger.info(f"SDM Model AIC: {sdm_model.aic}")
-        print("\nModel Comparison based on AIC:")
-        print(f"SAR Model AIC: {sar_model.aic}")
-        print(f"SDM Model AIC: {sdm_model.aic}")
-
-        # Select the model with the lowest AIC (best fit)
-        if sar_model.aic < sdm_model.aic:
-            print("SAR Model has a better fit based on AIC.")
-            selected_model = sar_model
-            model_type = 'SAR'
-        else:
-            print("SDM Model has a better fit based on AIC.")
-            selected_model = sdm_model
-            model_type = 'SDM'
-
-    except Exception as e:
-        print(f"Error during model comparison: {e}")
-        logger.error(f"Error comparing models: {e}")
+    # try:
+    #     # Calculate AIC for SAR model
+    #     n_sar = sar_model.n  # Number of observations
+    #     k_sar = len(sar_model.betas)  # Number of parameters (including intercept)
+    #     rss_sar = (sar_model.u ** 2).sum()  # Residual sum of squares
+    #     aic_sar = n_sar * (rss_sar / n_sar).log() + 2 * k_sar  # AIC formula for SAR
+    #
+    #     # Calculate AIC for SDM model
+    #     n_sdm = sdm_model.n  # Number of observations
+    #     k_sdm = len(sdm_model.betas)  # Number of parameters (including intercept)
+    #     rss_sdm = (sdm_model.u ** 2).sum()  # Residual sum of squares
+    #     aic_sdm = n_sdm * (rss_sdm / n_sdm).log() + 2 * k_sdm  # AIC formula for SDM
+    #
+    #     # Log Model Comparison Results
+    #     logger.info("\nModel Comparison based on AIC:")
+    #     logger.info(f"SAR Model AIC: {aic_sar}")
+    #     logger.info(f"SDM Model AIC: {aic_sdm}")
+    #     print("\nModel Comparison based on AIC:")
+    #     print(f"SAR Model AIC: {aic_sar}")
+    #     print(f"SDM Model AIC: {aic_sdm}")
+    #
+    #     # Select the model with the lowest AIC (best fit)
+    #     if aic_sar < aic_sdm:
+    #         print("SAR Model has a better fit based on AIC.")
+    #         selected_model = sar_model
+    #         model_type = 'SAR'
+    #     else:
+    #         print("SDM Model has a better fit based on AIC.")
+    #         selected_model = sdm_model
+    #         model_type = 'SDM'
+    #     print("Selected model is:", model_type)
+    #
+    # except Exception as e:
+    #     print(f"Error during model comparison: {e}")
+    #     logger.error(f"Error comparing models: {e}")
 
     # 5. Extract and Display Coefficients
-
+    selected_model = sdm_model
+    model_type = 'SDM'
     try:
         # Extract coefficients from the selected model
         coefficients = pd.DataFrame({
