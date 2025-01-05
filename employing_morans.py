@@ -131,8 +131,8 @@ gdf['Region'] = gdf['ADM1_EN'].str.strip().str.lower()
 merged_gdf = gdf.merge(real_data, on='Region', how='left')
 
 # Output the column names of the merged GeoDataFrame
-# print("Columns in merged_gdf:")
-# print("\n".join(merged_gdf.columns.tolist()))
+print("Columns in merged_gdf:")
+print("\n".join(merged_gdf.columns.tolist()))
 
 # Define the list of regions to keep
 regions_to_keep = ['arusha', 'dar-es-salaam', 'kigoma', 'mbeya', 'mwanza', 'pwani', 'singida']
@@ -279,123 +279,162 @@ plt.legend(handles=legend_patches, loc='upper right')
 plt.title('LISA Clusters for Poverty Level')
 plt.axis('off')
 plt.show()
+print("\n\n\n\n\n")
 
 # 4. Spatial Regression Modeling
-
 # 4.1. Prepare the Data for Modeling
 
-# Define the dependent variable
-y = merged_gdf['Poverty_Level'].values.reshape(-1, 1)
-
-# Define the independent variables
-X = merged_gdf[[
-    'Hospitals_Percent_Change',
-    'Health_Centers_Percent_Change',
-    'Dispensaries_Percent_Change',
-    'Mortality_Rate_Percent_Change',
-    'Water_Access_Percent_Change',
-    'Electricity_Access_Percent_Change',
-    'Average Max Annual Temperature',
-    'Average Min Annual Temperature',
-    'Average Annual Rainfall',
-    'Change Urban Expansion (km²)',
-    'Crop Land Vegetation Change (km²)',
-    'Natural Vegetation Change (km²) Deforestation',
-    'Range Land Change (km²)'
-]].values
-
-# Add a constant term
-X = add_constant(X)
-
-# Define variable names for reference
-variable_names = ['const', 'Hospitals_Percent_Change', 'Health_Centers_Percent_Change',
-                  'Dispensaries_Percent_Change', 'Mortality_Rate_Percent_Change',
-                  'Water_Access_Percent_Change', 'Electricity_Access_Percent_Change',
-                  'Average Max Annual Temperature', 'Average Min Annual Temperature',
-                  'Average Annual Rainfall', 'Change Urban Expansion (km²)',
-                  'Crop Land Vegetation Change (km²)', 'Natural Vegetation Change (km²) Deforestation',
-                  'Range Land Change (km²)']
-
-# 4.2. Spatial Lag Model (SAR)
-
-# Initialize and fit the Spatial Lag Model (SAR)
-sar_model = spreg.GM_Lag(
-    y, X, w=w, name_y='Poverty_Level',
-    name_x=variable_names,
-    name_ds='Dataset'
-)
-
-# Display the summary of the SAR model
-print("\nSpatial Lag Model (SAR) Summary:")
-print(sar_model.summary)
-
-# 4.3. Spatial Durbin Model (SDM)
-
-# Initialize and fit the Spatial Durbin Model (SDM)
-sdm_model = spreg.GM_Lag(
-    y, X, w=w, name_y='Poverty_Level',
-    name_x=variable_names,
-    name_ds='Dataset',
-    lag_q=True  # Include spatial lags of independent variables
-)
-
-# Display the summary of the SDM model
-print("\nSpatial Durbin Model (SDM) Summary:")
-print(sdm_model.summary)
-
-# 4.4. Model Comparison
-
-# Compare AIC values
-print("\nModel Comparison based on AIC:")
-print(f"SAR Model AIC: {sar_model.aic}")
-print(f"SDM Model AIC: {sdm_model.aic}")
-
-# Select the model with the lowest AIC (best fit)
-if sar_model.aic < sdm_model.aic:
-    print("SAR Model has a better fit based on AIC.")
-    selected_model = sar_model
-    model_type = 'SAR'
+# Ensure no missing data for the dependent variable
+if merged_gdf['Poverty_Level'].isnull().any():
+    print("Error: 'Poverty_Level' contains missing values. Cannot proceed with regression modeling.")
 else:
-    print("SDM Model has a better fit based on AIC.")
-    selected_model = sdm_model
-    model_type = 'SDM'
+    # Define the dependent variable (poverty level)
+    y = merged_gdf['Poverty_Level'].values.reshape(-1, 1)
 
-# 5. Extract and Display Coefficients
+    # Define the independent variables (features)
+    try:
+        # X = merged_gdf[[
+        #     'Total Health Facilities',
+        #     'Total Access to Water %',
+        #     'Total Access to Electricity',
+        #     'Average Max Annual Temperature',
+        #     'Average Min Annual Temperature',
+        #     'Average Annual Rainfall',
+        #     'Change Urban Expansion (km²)',
+        #     'Crop Land Vegetation Change (km²)',
+        #     'Natural Vegetation Change (km²) Deforestation',
+        #     'Range Land Change (km²)',
+        #     'INFANT MORTALITY RATE',
+        #     'LIFE EXPECTANCY'
+        # ]].values
 
-# Extract coefficients from the selected model
-coefficients = pd.DataFrame({
-    'Variable': selected_model.name_x,
-    'Coefficient': selected_model.betas.flatten(),
-    'Std_Error': selected_model.std_errs.flatten(),
-    'p_Value': selected_model.p_values.flatten()
-})
+        X = merged_gdf[[
+            'Total Health Facilities',
+            'Total Access to Water %',
+            'Total Access to Electricity',
+            'Average Max Annual Temperature',
+            'LIFE EXPECTANCY'
+        ]].values
 
-print(f"\n{model_type} Model Coefficients:")
-print(coefficients)
+        # Add a constant term to the independent variables
+        X = add_constant(X)
 
-# 6. Visualization of Regression Results
+        # Define variable names for reference
+        variable_names = ['const', 'Total Health Facilities', 'Total Access to Water %',
+                          'Total Access to Electricity', 'Average Max Annual Temperature',
+                          'Average Min Annual Temperature', 'Average Annual Rainfall',
+                          'Change Urban Expansion (km²)', 'Crop Land Vegetation Change (km²)',
+                          'Natural Vegetation Change (km²) Deforestation', 'Range Land Change (km²)',
+                          'INFANT MORTALITY RATE', 'LIFE EXPECTANCY']
 
-# 6.1. Plot Residuals
+    except KeyError as e:
+        print(f"Error: Missing required independent variable in the dataset. {e}")
+        exit()
 
-# Calculate residuals for the selected model
-merged_gdf['Residuals'] = selected_model.u.flatten()
+    # 4.2. Spatial Lag Model (SAR)
+    print(f"Shape of y (dependent variable): {y.shape}")
+    print(f"Shape of X (independent variables): {X.shape}")
 
-# Plot Residuals
-fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-merged_gdf.plot(column='Residuals', cmap='coolwarm', legend=True,
-                edgecolor='black', linewidth=0.5, ax=ax)
-plt.title(f'{model_type} Model Residuals')
-plt.axis('off')
-plt.show()
+    try:
+        # Initialize and fit the SAR model
+        sar_model = spreg.GM_Lag(
+            y, X, w=w, name_y='Poverty_Level',
+            name_x=variable_names,
+            name_ds='Dataset'
+        )
 
-# 6.2. Moran’s I on Residuals
+        # Display the summary of the SAR model
+        print("\nSpatial Lag Model (SAR) Summary:")
+        print(sar_model.summary)
 
-# Calculate Moran's I for Residuals
-residuals = merged_gdf['Residuals'].values
-moran_residuals = esda.Moran(residuals, w)
-print(f"\nMoran's I for {model_type} Residuals: {moran_residuals.I}")
-print(f"p-value: {moran_residuals.p_sim}")
-print(f"Z-score: {moran_residuals.Z_sim}")
+    except Exception as e:
+        print(f"Error while fitting SAR model: {e}")
+
+    # 4.3. Spatial Durbin Model (SDM)
+
+    try:
+        # Initialize and fit the SDM model
+        sdm_model = spreg.GM_Lag(
+            y, X, w=w, name_y='Poverty_Level',
+            name_x=variable_names,
+            name_ds='Dataset',
+            lag_q=True  # Include spatial lags of independent variables
+        )
+
+        # Display the summary of the SDM model
+        print("\nSpatial Durbin Model (SDM) Summary:")
+        print(sdm_model.summary)
+
+    except Exception as e:
+        print(f"Error while fitting SDM model: {e}")
+
+    # 4.4. Compare Models (Based on AIC)
+
+    try:
+        print("\nModel Comparison based on AIC:")
+        print(f"SAR Model AIC: {sar_model.aic}")
+        print(f"SDM Model AIC: {sdm_model.aic}")
+
+        # Select the model with the lowest AIC (best fit)
+        if sar_model.aic < sdm_model.aic:
+            print("SAR Model has a better fit based on AIC.")
+            selected_model = sar_model
+            model_type = 'SAR'
+        else:
+            print("SDM Model has a better fit based on AIC.")
+            selected_model = sdm_model
+            model_type = 'SDM'
+
+    except Exception as e:
+        print(f"Error during model comparison: {e}")
+
+    # 5. Extract and Display Coefficients
+
+    try:
+        # Extract coefficients from the selected model
+        coefficients = pd.DataFrame({
+            'Variable': selected_model.name_x,
+            'Coefficient': selected_model.betas.flatten(),
+            'Std_Error': selected_model.std_errs.flatten(),
+            'p_Value': selected_model.p_values.flatten()
+        })
+
+        print(f"\n{model_type} Model Coefficients:")
+        print(coefficients)
+
+    except Exception as e:
+        print(f"Error while extracting coefficients: {e}")
+
+    # 6. Visualization of Regression Results
+
+    # 6.1. Plot Residuals
+    try:
+        # Calculate residuals for the selected model
+        merged_gdf['Residuals'] = selected_model.u.flatten()
+
+        # Plot Residuals
+        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+        merged_gdf.plot(column='Residuals', cmap='coolwarm', legend=True,
+                        edgecolor='black', linewidth=0.5, ax=ax)
+        plt.title(f'{model_type} Model Residuals')
+        plt.axis('off')
+        plt.show()
+
+    except Exception as e:
+        print(f"Error while plotting residuals: {e}")
+
+    # 6.2. Moran’s I on Residuals
+
+    try:
+        # Calculate Moran's I for Residuals
+        residuals = merged_gdf['Residuals'].values
+        moran_residuals = esda.Moran(residuals, w)
+        print(f"\nMoran's I for {model_type} Residuals: {moran_residuals.I}")
+        print(f"p-value: {moran_residuals.p_sim}")
+        print(f"Z-score: {moran_residuals.z_sim}")
+
+    except Exception as e:
+        print(f"Error while calculating Moran's I for residuals: {e}")
 
 # 7. Final Mapping of Coefficients
 
