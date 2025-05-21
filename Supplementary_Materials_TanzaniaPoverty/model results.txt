@@ -1,8 +1,26 @@
-2025-01-09 22:31:20,907 - INFO - Global Moran's I: 0.7616931662630309
-2025-01-09 22:31:20,908 - INFO - Global Moran's p-value: 0.061
-2025-01-09 22:31:20,908 - INFO - Global Moran's Z-score: 1.7604810245184248
-2025-01-09 22:31:23,813 - INFO - LISA Results:
-2025-01-09 22:31:23,815 - INFO - 
+E:\tanzania_research\env\Scripts\python.exe E:\tanzania_research\employing_morans.py 
+E:\tanzania_research\env\Lib\site-packages\spaghetti\network.py:41: FutureWarning: The next major release of pysal/spaghetti (2.0.0) will drop support for all ``libpysal.cg`` geometries. This change is a first step in refactoring ``spaghetti`` that is expected to result in dramatically reduced runtimes for network instantiation and operations. Users currently requiring network and point pattern input as ``libpysal.cg`` geometries should prepare for this simply by converting to ``shapely`` geometries.
+  warnings.warn(dep_msg, FutureWarning, stacklevel=1)
+No missing Poverty_Level data found.
+
+
+CRS of Merged GeoDataFrame: PROJCRS["WG+-------------------------------------------------------------+|                  Data Collection and Preparation            |+-------------------------------------------------------------+| Household Surveys (Primary Data)    |  Secondary Data from  ||                                     |  Various Sources      ||                                     |  (TASAF, NBS, Ministries)|+-------------------------------------------------------------+|                  Data Aggregation and Processing            |+-------------------------------------------------------------+|                       Data Analysis                         |+-------------------------------------------------------------+| SAR Model (Spatial Autoregressive)  |  GWR Model (Geographically||                                     |  Weighted Regression)    || Durbin Model (Spatial Durbin)       |                         |+-------------------------------------------------------------+|        Performance Index Calculation and Validation          |+-------------------------------------------------------------+|                          Results                            |+-------------------------------------------------------------+| Spatial Mapping (Visualizing Patterns)  |  Statistical Analysis ||                                        |  (Correlation Coefficients) || Comparative Assessment  |  Recommendations                   |+-------------------------------------------------------------+S_1984_UTM_Zone_36S",BASEGEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]],ID["EPSG",6326]],PRIMEM["Greenwich",0,ANGLEUNIT["Degree",0.0174532925199433]]],CONVERSION["UTM zone 36S",METHOD["Transverse Mercator",ID["EPSG",9807]],PARAMETER["Latitude of natural origin",0,ANGLEUNIT["Degree",0.0174532925199433],ID["EPSG",8801]],PARAMETER["Longitude of natural origin",33,ANGLEUNIT["Degree",0.0174532925199433],ID["EPSG",8802]],PARAMETER["Scale factor at natural origin",0.9996,SCALEUNIT["unity",1],ID["EPSG",8805]],PARAMETER["False easting",500000,LENGTHUNIT["metre",1],ID["EPSG",8806]],PARAMETER["False northing",10000000,LENGTHUNIT["metre",1],ID["EPSG",8807]],ID["EPSG",17036]],CS[Cartesian,3],AXIS["(E)",east,ORDER[1],LENGTHUNIT["metre",1,ID["EPSG",9001]]],AXIS["(N)",north,ORDER[2],LENGTHUNIT["metre",1,ID["EPSG",9001]]],AXIS["ellipsoidal height (h)",up,ORDER[3],LENGTHUNIT["metre",1,ID["EPSG",9001]]]]
+Reprojected GeoDataFrame to EPSG:4326
+
+Invalid geometries found. Attempting to fix...
+All geometries are now valid.
+E:\tanzania_research\env\Lib\site-packages\libpysal\weights\contiguity.py:347: UserWarning: The weights matrix is not fully connected: 
+ There are 4 disconnected components.
+ There are 2 islands with ids: 7, 15.
+  W.__init__(self, neighbors, ids=ids, **kw)
+('WARNING: ', 7, ' is an island (no neighbors)')
+('WARNING: ', 15, ' is an island (no neighbors)')
+
+Global Moran's I: 0.7616931662630309
+p-value: 0.059
+Z-score: 1.7885214336739363
+
+LISA Clusters (Tabular Format):
     ADM1_EN_x    LISA_Cluster
        Arusha Not Significant
 Dar-es-salaam Not Significant
@@ -11,8 +29,14 @@ Dar-es-salaam Not Significant
        Mwanza        Low-High
         Pwani         Low-Low
       Singida Not Significant
-2025-01-09 22:31:23,999 - INFO - Spatial Lag Model (SAR) Summary:
-2025-01-09 22:31:23,999 - INFO - REGRESSION RESULTS
+
+
+
+
+
+
+Spatial Lag Model (SAR) Summary:
+REGRESSION RESULTS
 ------------------
 
 SUMMARY OF OUTPUT: SPATIAL TWO STAGE LEAST SQUARES
@@ -55,8 +79,9 @@ Total Access to Electricity        -0.0670          0.0105         -0.0564
 Average Max Annual Temperature        -0.4183          0.0658         -0.3525
 Average Min Annual Temperature         0.1044         -0.0164          0.0880
 ================================ END OF REPORT =====================================
-2025-01-09 22:31:24,008 - INFO - Spatial Durbin Model (SDM) Summary:
-2025-01-09 22:31:24,008 - INFO - REGRESSION RESULTS
+
+Spatial Durbin Model (SDM) Summary:
+REGRESSION RESULTS
 ------------------
 
 SUMMARY OF OUTPUT: SPATIAL TWO STAGE LEAST SQUARES
@@ -99,23 +124,32 @@ Total Access to Electricity        -0.0670          0.0105         -0.0564
 Average Max Annual Temperature        -0.4183          0.0658         -0.3525
 Average Min Annual Temperature         0.1044         -0.0164          0.0880
 ================================ END OF REPORT =====================================
-2025-01-09 22:31:24,008 - INFO - 
+
 Model Comparison based on AIC:
-2025-01-09 22:31:24,008 - INFO - SAR Model AIC: -362.0482878048707
-2025-01-09 22:31:24,008 - INFO - SDM Model AIC: -362.0482878048707
-2025-01-09 22:31:24,009 - INFO - 
-Selected Model Coefficients:
-2025-01-09 22:31:24,010 - INFO - 
-                      Variable  Coefficient    Std_Error  p_Value
-                     Intercept     7.741665          NaN      NaN
-                      CONSTANT     0.005497 3.222534e-14      0.0
-       Total Health Facilities     0.043399 1.116568e-13      0.0
-       Total Access to Water %    -0.066966 1.228506e-13      0.0
-   Total Access to Electricity    -0.418311          NaN      NaN
-Average Max Annual Temperature     0.104435 1.278105e-13      0.0
-Average Min Annual Temperature    -0.186642          NaN      NaN
-2025-01-09 22:32:01,541 - INFO - 
+SAR Model AIC: -362.0482878048707
+SDM Model AIC: -362.0482878048707
+SDM Model has a better fit based on AIC.
+Selected model is: SDM
+Selected model :  <spreg.twosls_sp.GM_Lag object at 0x000001C08F7D0980>
+Model type :  SDM
+
+SDM Model Coefficients:
+                         Variable  Coefficient     Std_Error  p_Value
+0                       Intercept     7.741665           NaN      NaN
+1                        CONSTANT     0.005497  3.222534e-14      0.0
+2         Total Health Facilities     0.043399  1.116568e-13      0.0
+3         Total Access to Water %    -0.066966  1.228506e-13      0.0
+4     Total Access to Electricity    -0.418311           NaN      NaN
+5  Average Max Annual Temperature     0.104435  1.278105e-13      0.0
+6  Average Min Annual Temperature    -0.186642           NaN      NaN
+
 Moran's I for SDM Residuals: -0.04833021710499503
-2025-01-09 22:32:01,541 - INFO - p-value: 0.425
-2025-01-09 22:32:01,541 - INFO - Z-score: 0.20105987783913906
-2025-01-09 22:32:01,704 - INFO - GWR Summary
+p-value: 0.427
+Z-score: 0.1871517580916688
+E:\tanzania_research\employing_morans.py:569: FutureWarning: 
+
+Passing `palette` without assigning `hue` is deprecated and will be removed in v0.14.0. Assign the `y` variable to `hue` and set `legend=False` for the same effect.
+
+  sns.barplot(x='Coefficient', y='Variable', data=coefficients_plot, palette='viridis')
+
+Process finished with exit code 0

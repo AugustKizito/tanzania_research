@@ -1,0 +1,16 @@
+Supplementary_Materials/
+├── Code/
+│   ├── SAR_Model.py             # With weight matrix implementation
+│   ├── GWR_Analysis.ipynb       # Bandwidth optimization included
+│   └── QGIS_Scripts/            # Mobile-money weight calculations
+├── Data/
+│   ├── Processed/               # Anonymized regional datasets
+│   │   ├── poverty_indicators.csv
+│   │   └── spatial_weights.geojson
+│   └── Raw_Data_Access/
+│       ├── NBS_Request_Template.docx
+│       └── TASAF_MoU_Example.pdf
+├── Environment/
+│   ├── conda_env.yml            # Exact package versions
+│   └── requirements.txt
+└── README.md                    # Critical - see template below

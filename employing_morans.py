@@ -186,10 +186,17 @@ def plot_residuals(merged_gdf, selected_model, model_type):
         # Plot Residuals
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
         merged_gdf.plot(column='Residuals', cmap='coolwarm', legend=True,
-                        edgecolor='black', linewidth=0.5, ax=ax)
+                        edgecolor='black', linewidth=0.8, ax=ax)
         plt.title(f'{model_type} Model Residuals')
-        plt.axis('off')
-        #plt.show()
+        # plt.axis('off')
+
+        # Set the boundary line width
+        ax.spines['top'].set_linewidth(2)
+        ax.spines['bottom'].set_linewidth(2)
+        ax.spines['left'].set_linewidth(2)
+        ax.spines['right'].set_linewidth(2)
+
+        plt.show()
         return merged_gdf
 
     except Exception as e:
