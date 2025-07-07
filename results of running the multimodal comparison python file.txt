@@ -1,0 +1,85 @@
+(env) PS E:\tanzania_research> python .\multimodal_comparison.py
+All regions successfully merged with data from arrays.
+--- Running OLS Model (Non-Spatial) ---
+                            OLS Regression Results
+==============================================================================
+Dep. Variable:          Poverty_Level   R-squared:                       0.167
+Model:                            OLS   Adj. R-squared:                  0.054
+Method:                 Least Squares   F-statistic:                     1.473
+Date:                Mon, 07 Jul 2025   Prob (F-statistic):              0.249
+Time:                        12:20:11   Log-Likelihood:                -42.480
+No. Observations:                  26   AIC:                             92.96
+Df Residuals:                      22   BIC:                             97.99
+Df Model:                           3
+Covariance Type:            nonrobust
+===============================================================================================
+                                  coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------------------
+const                           3.3033      1.869      1.768      0.091      -0.572       7.179
+Total Health Facilities         0.0078      0.004      1.792      0.087      -0.001       0.017
+Total Access to Water %        -0.0116      0.034     -0.343      0.735      -0.082       0.058
+Total Access to Electricity    -0.0335      0.032     -1.059      0.301      -0.099       0.032
+==============================================================================
+Omnibus:                        6.211   Durbin-Watson:                   1.883
+Prob(Omnibus):                  0.045   Jarque-Bera (JB):                2.080
+Skew:                           0.263   Prob(JB):                        0.354
+Kurtosis:                       1.718   Cond. No.                     2.29e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 2.29e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.
+--------------------------------------------------
+
+--- Running Spatial Autoregressive (SAR) Model ---
+MAXIMUM LIKELIHOOD SPATIAL LAG (METHOD = FULL)
+['CONSTANT', 'var_1', 'var_2', 'var_3', 'W_dep_var']
+dep_var
+SAR Model AIC: 94.814539909368
+SAR Model BIC (manually computed): 101.1050225994754
+SAR Model Log-Likelihood: -42.407269954684
+--------------------------------------------------
+
+--- Running Spatial Error Model (SEM) ---
+Coefficients:
+lambda                    Coef:     3.3192 | StdErr:   1.7112 | z-Stat:   1.9397 (p=0.0524)
+CONSTANT                  Coef:     0.0077 | StdErr:   0.0040 | z-Stat:   1.9375 (p=0.0527)
+Total Health Facilities   Coef:    -0.0119 | StdErr:   0.0310 | z-Stat:  -0.3826 (p=0.7020)
+Total Access to Water %   Coef:    -0.0327 | StdErr:   0.0290 | z-Stat:  -1.1300 (p=0.2585)
+Total Access to Electricity Coef:    -0.0200 | StdErr:   0.2698 | z-Stat:  -0.0742 (p=0.9408)
+
+SEM Model Log-Likelihood: -42.4772
+SEM Model AIC: 92.9544
+SEM Model BIC (manually computed): 101.2449
+--------------------------------------------------
+
+--- Running Spatial Durbin Model (SDM) ---
+
+--- Spatial Durbin Model (SDM) ---
+', 'W_Total Access to Electricity', 'W_Poverty_Level']
+Number of Observations: 26
+Number of Estimated Coefficients (excluding rho): 8
+
+Coefficients:
+rho                       Coef:     2.5819 | StdErr:   2.9743 | z-Stat:   0.8681 (p=0.3853)
+CONSTANT                  Coef:     0.0088 | StdErr:   0.0041 | z-Stat:   2.1222 (p=0.0338)
+Total Health Facilities   Coef:     0.0023 | StdErr:   0.0315 | z-Stat:   0.0739 (p=0.9411)
+Total Access to Water %   Coef:    -0.0477 | StdErr:   0.0313 | z-Stat:  -1.5228 (p=0.1278)
+Total Access to Electricity Coef:    -0.0112 | StdErr:   0.0082 | z-Stat:  -1.3735 (p=0.1696)
+W_Total Health Facilities Coef:     0.0300 | StdErr:   0.0583 | z-Stat:   0.5156 (p=0.6062)
+W_Total Access to Water % Coef:     0.0419 | StdErr:   0.0664 | z-Stat:   0.6305 (p=0.5283)
+W_Total Access to Electricity Coef:     0.0247 | StdErr:   0.2646 | z-Stat:   0.0935 (p=0.9255)
+
+Spatial Lag Coefficient (rho): 2.5819
+
+SDM Model Log-Likelihood: -41.5274
+SDM Model AIC: 99.0548
+SDM Model BIC (manually computed): 122.1520
+--------------------------------------------------
+
+--- Likelihood Ratio (LR) Test Results ---
+LR Test (SDM vs. SAR): Statistic = 1.7597, DF = 3, p-value = 0.6237
+LR Test (SDM vs. SEM): Statistic = 1.8996, DF = 3, p-value = 0.5935
+--------------------------------------------------
+(env) PS E:\tanzania_research>
