@@ -1,0 +1,200 @@
+All regions successfully merged with data from arrays.
+
+Spatial weights matrix created for 26 regions.
+
+======================================================================
+--- Running OLS Model (Non-Spatial) ---
+======================================================================
+                            OLS Regression Results
+==============================================================================
+Dep. Variable:          Poverty_Level   R-squared:                       0.167
+Model:                            OLS   Adj. R-squared:                  0.054
+Method:                 Least Squares   F-statistic:                     1.473
+Date:                Sat, 12 Jul 2025   Prob (F-statistic):              0.249
+Time:                        21:30:36   Log-Likelihood:                -42.480
+No. Observations:                  26   AIC:                             92.96
+Df Residuals:                      22   BIC:                             97.99
+Df Model:                           3
+Covariance Type:            nonrobust
+===============================================================================================
+                                  coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------------------
+const                           3.3033      1.869      1.768      0.091      -0.572       7.179
+Total Health Facilities         0.0078      0.004      1.792      0.087      -0.001       0.017
+Total Access to Water %        -0.0116      0.034     -0.343      0.735      -0.082       0.058
+Total Access to Electricity    -0.0335      0.032     -1.059      0.301      -0.099       0.032
+==============================================================================
+Omnibus:                        6.211   Durbin-Watson:                   1.883
+Prob(Omnibus):                  0.045   Jarque-Bera (JB):                2.080
+Skew:                           0.263   Prob(JB):                        0.354
+Kurtosis:                       1.718   Cond. No.                     2.29e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 2.29e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.
+======================================================================
+
+
+======================================================================
+--- Running Spatial Autoregressive (SAR) Model ---
+======================================================================
+Model Title: MAXIMUM LIKELIHOOD SPATIAL LAG (METHOD = FULL)
+Dependent Variable: Poverty_Level
+Independent Variables (X): ['CONSTANT', 'Total Health Facilities', 'Total Access to Water %', 'Total Access to Electricity', 'W_Poverty_Level']
+Number of Observations: 26
+
+Coefficients:
+Variable                        Coef     StdErr     z-Stat    p-value
+----------------------------------------------------------------------
+rho                           3.6609     1.9249     1.9018     0.0572
+CONSTANT                      0.0078     0.0040     1.9470     0.0515
+Total Health Facilities      -0.0123     0.0310    -0.3971     0.6913
+Total Access to Water %      -0.0315     0.0291    -1.0830     0.2788
+Total Access to Electricity    -0.0946     0.2656    -0.3560     0.7218
+
+SAR Model Log-Likelihood: -42.4073
+SAR Model AIC: 94.8145
+SAR Model BIC (manually computed): 101.1050
+======================================================================
+
+
+======================================================================
+--- Running Spatial Error Model (SEM) ---
+======================================================================
+Model Title: ML SPATIAL ERROR (METHOD = full)
+Dependent Variable: Poverty_Level
+Independent Variables (X): ['CONSTANT', 'Total Health Facilities', 'Total Access to Water %', 'Total Access to Electricity', 'lambda']
+Number of Observations: 26
+
+Coefficients:
+Variable                        Coef     StdErr     z-Stat    p-value
+----------------------------------------------------------------------
+lambda                        3.3192     1.7112     1.9397     0.0524
+CONSTANT                      0.0077     0.0040     1.9375     0.0527
+Total Health Facilities      -0.0119     0.0310    -0.3826     0.7020
+Total Access to Water %      -0.0327     0.0290    -1.1300     0.2585
+Total Access to Electricity    -0.0200     0.2698    -0.0742     0.9408
+
+SEM Model Log-Likelihood: -42.4772
+SEM Model AIC: 92.9544
+SEM Model BIC (manually computed): 97.9868
+======================================================================
+
+
+======================================================================
+--- Running Spatial Durbin Model (SDM) ---
+======================================================================
+Model Title: MAXIMUM LIKELIHOOD SPATIAL LAG WITH SLX - SPATIAL DURBIN MODEL (METHOD = FULL)
+Dependent Variable: Poverty_Level
+Independent Variables (X): ['CONSTANT', 'Total Health Facilities', 'Total Access to Water %', 'Total Access to Electricity', 'W_Total Health Facilities', 'W_Total Access to Water %
+', 'W_Total Access to Electricity', 'W_Poverty_Level']
+Number of Observations: 26
+
+Coefficients:
+Variable                        Coef     StdErr     z-Stat    p-value
+----------------------------------------------------------------------
+rho                           2.5819     2.9743     0.8681     0.3853
+CONSTANT                      0.0088     0.0041     2.1222     0.0338
+Total Health Facilities       0.0023     0.0315     0.0739     0.9411
+Total Access to Water %      -0.0477     0.0313    -1.5228     0.1278
+Total Access to Electricity    -0.0112     0.0082    -1.3735     0.1696
+W_Total Health Facilities     0.0300     0.0583     0.5156     0.6062
+W_Total Access to Water %     0.0419     0.0664     0.6305     0.5283
+W_Total Access to Electricity     0.0247     0.2646     0.0935     0.9255
+
+SDM Model Log-Likelihood: -41.5274
+SDM Model AIC: 99.0548
+SDM Model BIC (manually computed): 109.1196
+======================================================================
+
+
+======================================================================
+--- Spatial Durbin Model (SDM) - Manual Impact Decomposition ---
+======================================================================
+Variable                           Direct   Indirect      Total
+----------------------------------------------------------------------
+Total Health Facilities           -0.0114    -0.0090    -0.0205
+Total Access to Water %           -0.0167     0.0204     0.0037
+Total Access to Electricity       -0.0096     0.0011    -0.0085
+======================================================================
+
+
+======================================================================
+--- Likelihood Ratio (LR) Test Results ---
+======================================================================
+LR Test (SDM vs. SAR): Statistic = 1.7597, DF = 3, p-value = 0.6237
+LR Test (SDM vs. SEM): Statistic = 1.8996, DF = 3, p-value = 0.5935
+======================================================================
+
+
+======================================================================
+--- Running Geographically Weighted Regression (GWR) ---
+======================================================================
+Optimal fixed bandwidth: 1933160.5100
+===========================================================================
+Model type                                                         Gaussian
+Number of observations:                                                  26
+Number of covariates:                                                     4
+
+Global Regression Results
+---------------------------------------------------------------------------
+Residual sum of squares:                                             39.961
+Log-likelihood:                                                     -42.480
+AIC:                                                                 92.960
+AICc:                                                                97.960
+BIC:                                                                -31.717
+R2:                                                                   0.167
+Adj. R2:                                                              0.054
+
+Variable                              Est.         SE  t(Est/SE)    p-value
+------------------------------- ---------- ---------- ---------- ----------
+X0                                   3.303      1.869      1.768      0.077
+X1                                   0.008      0.004      1.792      0.073
+X2                                  -0.012      0.034     -0.343      0.731
+X3                                  -0.033      0.032     -1.059      0.289
+
+Geographically Weighted Regression (GWR) Results
+---------------------------------------------------------------------------
+Spatial kernel:                                          Fixed bisquare
+Bandwidth used:                                                 1933160.510
+
+Diagnostic information
+---------------------------------------------------------------------------
+Residual sum of squares:                                             36.924
+Effective number of parameters (trace(S)):                            4.576
+Degree of freedom (n - trace(S)):                                    21.424
+Sigma estimate:                                                       1.313
+Log-likelihood:                                                     -41.452
+AIC:                                                                 94.056
+AICc:                                                                97.831
+BIC:                                                                101.071
+R2:                                                                   0.231
+Adjusted R2:                                                          0.058
+Adj. alpha (95%):                                                     0.044
+Adj. critical t value (95%):                                          2.124
+
+Summary Statistics For GWR Parameter Estimates
+---------------------------------------------------------------------------
+Variable                   Mean        STD        Min     Median        Max
+-------------------- ---------- ---------- ---------- ---------- ----------
+X0                        3.272      0.330      2.689      3.247      3.948
+X1                        0.008      0.000      0.007      0.008      0.008
+X2                       -0.010      0.005     -0.022     -0.011     -0.001
+X3                       -0.033      0.004     -0.039     -0.034     -0.027
+===========================================================================
+
+None
+
+Summary of GWR Local Coefficients:
+Variable                  Mean       Min        Max
+------------------------------------------------------------
+Intercept                 3.2724     2.6894     3.9476
+Total Health Facilities   0.0076     0.0067     0.0084
+Total Access to Water %   -0.0105    -0.0224    -0.0009
+Total Access to Electricity -0.0332    -0.0394    -0.0266
+------------------------------------------------------------
+======================================================================
+
+(env) PS E:\tanzania_research>

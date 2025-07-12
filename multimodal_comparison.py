@@ -2,11 +2,14 @@ import geopandas as gpd
 import libpysal as lp
 import numpy as np
 import pandas as pd
-import spreg
 import statsmodels.api as sm
-from scipy.stats import norm
-from spreg import ML_Lag
+from scipy.stats import norm, chi2  # Ensure chi2 is imported for LR tests
+from spreg import ML_Lag, ML_Error
 import warnings
+from mgwr.sel_bw import Sel_BW
+from mgwr.gwr import GWR
+
+#from estimation_of_ols_sar_sem_and_sdm import lr_sdm_vs_sem
 
 warnings.filterwarnings("ignore", message="Method 'bounded' does not support relative tolerance in x; defaulting to "
                                           "absolute tolerance.")
@@ -25,11 +28,9 @@ total_access_to_electricity = [52.3, 86.0, 28.9, 19.9, 43.1, 21.3, 20.3, 17.7, 6
                                37.7, 35.9, 41.9, 19.5, 24.8, 25.9, 15.9, 21.2, 28.1, 20.2, 33.5]
 
 # --- 1. Create a DataFrame from the provided arrays ---
-# Note: The column name for poverty incidence is adjusted to match 'Poverty_Level'
-# expected later in the script for consistency.
 data_dict = {
     'RegionName': regions,
-    'Poverty_Level': poverty_incidence,  # Renamed to match the variable 'y'
+    'Poverty_Level': poverty_incidence,
     'Total Health Facilities': total_health_facilities,
     'Total Access to Water %': total_access_to_water,
     'Total Access to Electricity': total_access_to_electricity
@@ -37,32 +38,30 @@ data_dict = {
 df_from_arrays = pd.DataFrame(data_dict)
 
 # --- Load Shapefile and Merge Data ---
-regions_path = "tanzania_regions/kIZITO.shp"  # Ensure this path is correct
-gdf = gpd.read_file(regions_path)
+regions_path = "tanzania_regions/kIZITO.shp"
+try:
+    gdf = gpd.read_file(regions_path)
+    df_from_arrays['RegionName_Clean'] = df_from_arrays['RegionName'].str.strip().str.title()
+    gdf['ADM1_EN_Clean'] = gdf['ADM1_EN'].str.strip().str.title()
+    df_from_arrays['RegionName_Clean'] = df_from_arrays['RegionName_Clean'].replace({'Mororgoro': 'Morogoro'})
+    merged_gdf = gdf.merge(df_from_arrays, left_on='ADM1_EN_Clean', right_on='RegionName_Clean', how='left')
 
-# Standardize names for merging (important for correct alignment)
-df_from_arrays['RegionName_Clean'] = df_from_arrays['RegionName'].str.strip().str.title()
-gdf['ADM1_EN_Clean'] = gdf['ADM1_EN'].str.strip().str.title()
+    if merged_gdf['Poverty_Level'].isna().any():
+        print("WARNING: Some regions did not merge successfully and have NaN for Poverty_Level.")
+        print("Unmerged regions (based on shapefile names):",
+              merged_gdf[merged_gdf['Poverty_Level'].isna()]['ADM1_EN'].tolist())
+    else:
+        print("All regions successfully merged with data from arrays.")
 
-# Fix specific known spelling errors in your data before merge (e.g., "Mororgoro" to "Morogoro")
-df_from_arrays['RegionName_Clean'] = df_from_arrays['RegionName_Clean'].replace({'Mororgoro': 'Morogoro'})
-
-# Merge the GeoDataFrame with the data from arrays
-# Use 'left' merge to keep all geometries from the shapefile
-merged_gdf = gdf.merge(df_from_arrays, left_on='ADM1_EN_Clean', right_on='RegionName_Clean', how='left')
-
-# --- Check for successful merge (optional, but good for debugging) ---
-if merged_gdf['Poverty_Level'].isna().any():
-    print("WARNING: Some regions did not merge successfully and have NaN for Poverty_Level.")
-    print("Unmerged regions (based on shapefile names):",
-          merged_gdf[merged_gdf['Poverty_Level'].isna()]['ADM1_EN'].tolist())
-else:
-    print("All regions successfully merged with data from arrays.")
+except FileNotFoundError:
+    print(f"Error: Shapefile not found at {regions_path}. Please ensure the path is correct.")
+    merged_gdf = df_from_arrays.copy()
+    merged_gdf['geometry'] = None
+    print("Proceeding with non-spatial analysis due to missing shapefile.")
 
 # --- 2. Define Dependent and Independent Variables from merged_gdf ---
 y = merged_gdf['Poverty_Level']
 
-# Independent Variables (Socio-economic indicators for 26 regions)
 X_cols = [
     'Total Health Facilities',
     'Total Access to Water %',
@@ -70,168 +69,273 @@ X_cols = [
 ]
 X = merged_gdf[X_cols]
 
-# Add a constant term to the independent variables (required for most regression models)
 X_constant = sm.add_constant(X)
 
 # --- 3. Create Spatial Weights Matrix for 26 Regions ---
-your_weights_matrix_26_regions = lp.weights.Queen.from_dataframe(merged_gdf, use_index=False)
-your_weights_matrix_26_regions.transform = 'R'  # Row-standardize the weights matrix
+if 'geometry' in merged_gdf.columns and merged_gdf['geometry'].iloc[0] is not None:
+    your_weights_matrix_26_regions = lp.weights.Queen.from_dataframe(merged_gdf, use_index=False)
+    your_weights_matrix_26_regions.transform = 'R'
+    print(f"\nSpatial weights matrix created for {len(your_weights_matrix_26_regions.id_order)} regions.")
+else:
+    your_weights_matrix_26_regions = None
+    print("\nSkipping spatial weights matrix creation as geometry data is not available.")
 
 # --- 4. Run Each Model and Print Summaries ---
 
+print("\n" + "=" * 70)
 print("--- Running OLS Model (Non-Spatial) ---")
+print("=" * 70)
 ols_model = sm.OLS(y, X_constant).fit()
 print(ols_model.summary())
-print("-" * 50)
+print("=" * 70 + "\n")
 
-print("\n--- Running Spatial Autoregressive (SAR) Model ---")
-# ML_Lag is suitable for SAR (and SDM if type="Durbin")
-sar_model = ML_Lag(y.values, X_constant.values, w=your_weights_matrix_26_regions)
-print(sar_model.title)  # Model title
-print(sar_model.name_x)
-print(sar_model.name_y)
+if your_weights_matrix_26_regions:
+    print("\n" + "=" * 70)
+    print("--- Running Spatial Autoregressive (SAR) Model ---")
+    print("=" * 70)
+    sar_model = ML_Lag(y.values, X_constant.values, w=your_weights_matrix_26_regions,
+                       name_y='Poverty_Level', name_x=X_constant.columns.tolist())
 
-print(f"SAR Model AIC: {sar_model.aic}")
+    print(f"Model Title: {sar_model.title}")
+    print(f"Dependent Variable: {sar_model.name_y}")
+    print(f"Independent Variables (X): {sar_model.name_x}")
+    print(f"Number of Observations: {sar_model.n}")
 
-# Extract necessary values
-loglik_sar = sar_model.logll
-n = y.shape[0]
-k = X_constant.shape[1] + 1  # +1 for the spatial lag coefficient (rho)
+    # Extract coefficients (rho + intercept + X)
+    betas_sar = sar_model.betas.flatten()
+    vcov_sar = sar_model.vm
+    std_errs_sar = np.sqrt(np.diag(vcov_sar))
 
-bic_sar = k * np.log(n) - 2 * loglik_sar
-print(f"SAR Model BIC (manually computed): {bic_sar}")
+    # Compute z-stats and p-values
+    z_stats_sar = betas_sar / std_errs_sar
+    p_values_sar = 2 * (1 - norm.cdf(np.abs(z_stats_sar)))
 
-print(f"SAR Model Log-Likelihood: {sar_model.logll}")
-print("-" * 50)
+    # Coefficients, standard errors, and z-stats
+    print("\nCoefficients:")
+    # The order of betas from ML_Lag is usually [rho, intercept, X_vars...]
+    sar_coeff_names = ["rho"] + sar_model.name_x
+    print(f"{'Variable':<25} {'Coef':>10} {'StdErr':>10} {'z-Stat':>10} {'p-value':>10}")
+    print("-" * 70)
+    for var, coef, std_err, z, p in zip(sar_coeff_names, betas_sar, std_errs_sar, z_stats_sar, p_values_sar):
+        print(f"{var:<25} {coef:>10.4f} {std_err:>10.4f} {z:>10.4f} {p:>10.4f}")
 
-print("\n--- Running Spatial Error Model (SEM) ---")
-sem_model = spreg.ML_Error(
-    y.values,
-    X_constant.values,
-    w=your_weights_matrix_26_regions,
-    name_x=X_constant.columns.tolist(),
-    name_y='Poverty_Level'
-)
+    print(f"\nSAR Model Log-Likelihood: {sar_model.logll:.4f}")
+    print(f"SAR Model AIC: {sar_model.aic:.4f}")
 
-# Coefficients and Variance-Covariance
-betas = sem_model.betas.flatten()
-vcov = sem_model.vm
-std_errs = np.sqrt(np.diag(vcov))
+    # BIC: manually compute
+    n_sar = sar_model.n
+    k_sar = sar_model.k  # k includes all estimated parameters: rho, intercept, X_vars
+    bic_sar = k_sar * np.log(n_sar) - 2 * sar_model.logll
+    print(f"SAR Model BIC (manually computed): {bic_sar:.4f}")
+    print("=" * 70 + "\n")
 
-# z-stats and p-values
-z_stats = betas / std_errs
-p_values = 2 * (1 - norm.cdf(np.abs(z_stats)))
+    print("\n" + "=" * 70)
+    print("--- Running Spatial Error Model (SEM) ---")
+    print("=" * 70)
+    sem_model = ML_Error(
+        y.values,
+        X_constant.values,
+        w=your_weights_matrix_26_regions,
+        name_x=X_constant.columns.tolist(),
+        name_y='Poverty_Level'
+    )
 
-# Names of coefficients (lambda is the spatial error coefficient)
-coeff_names = ["lambda"] + sem_model.name_x  # lambda first, then x
-print("Coefficients:")
-for var, coef, std_err, z, p in zip(coeff_names, betas, std_errs, z_stats, p_values):
-    print(f"{var:<25} Coef: {coef:>10.4f} | StdErr: {std_err:>8.4f} | z-Stat: {z:>8.4f} (p={p:.4f})")
+    print(f"Model Title: {sem_model.title}")
+    print(f"Dependent Variable: {sem_model.name_y}")
+    print(f"Independent Variables (X): {sem_model.name_x}")
+    print(f"Number of Observations: {sem_model.n}")
 
-# Log-Likelihood
-loglik_sem = sem_model.logll
-print(f"\nSEM Model Log-Likelihood: {loglik_sem:.4f}")
+    # Coefficients and Variance-Covariance
+    betas_sem = sem_model.betas.flatten()
+    vcov_sem = sem_model.vm
+    std_errs_sem = np.sqrt(np.diag(vcov_sem))
 
-# AIC is available directly
-print(f"SEM Model AIC: {sem_model.aic:.4f}")
+    # z-stats and p-values
+    z_stats_sem = betas_sem / std_errs_sem
+    p_values_sem = 2 * (1 - norm.cdf(np.abs(z_stats_sem)))
 
-# Manually compute BIC
-n = sem_model.n
-k = sem_model.k + 1  # includes lambda
-bic_sem = k * np.log(n) - 2 * loglik_sem
-print(f"SEM Model BIC (manually computed): {bic_sem:.4f}")
-print("-" * 50)
+    # Names of coefficients (lambda is the spatial error coefficient, then X_constant variables)
+    # The order of betas from ML_Error is usually [lambda, intercept, X_vars...]
+    sem_coeff_names = ["lambda"] + sem_model.name_x
+    print("\nCoefficients:")
+    print(f"{'Variable':<25} {'Coef':>10} {'StdErr':>10} {'z-Stat':>10} {'p-value':>10}")
+    print("-" * 70)
+    for var, coef, std_err, z, p in zip(sem_coeff_names, betas_sem, std_errs_sem, z_stats_sem, p_values_sem):
+        print(f"{var:<25} {coef:>10.4f} {std_err:>10.4f} {z:>10.4f} {p:>10.4f}")
 
-print("\n--- Running Spatial Durbin Model (SDM) ---")
-# ML_Lag explicitly runs an SDM
-sdm_model = ML_Lag(
-    y.values,
-    X.values,  # no constant added
-    w=your_weights_matrix_26_regions,
-    slx_lags=1,
-    name_y='Poverty_Level',
-    name_x=X_cols,  # matches X (no constant)
-    spat_diag=True
-)
+    # Log-Likelihood
+    print(f"\nSEM Model Log-Likelihood: {sem_model.logll:.4f}")
 
-# --- Custom summary print for SDM model (ML_Lag with slx_lags=1) ---
+    # AIC is available directly
+    print(f"SEM Model AIC: {sem_model.aic:.4f}")
+
+    # Manually compute BIC
+    n_sem = sem_model.n
+    k_sem = sem_model.k  # k includes all estimated parameters: lambda, intercept, X_vars
+    bic_sem = k_sem * np.log(n_sem) - 2 * sem_model.logll
+    print(f"SEM Model BIC (manually computed): {bic_sem:.4f}")
+    print("=" * 70 + "\n")
+
+    print("\n" + "=" * 70)
+    print("--- Running Spatial Durbin Model (SDM) ---")
+    print("=" * 70)
+    # ML_Lag with slx_lags=1 is the correct way to run SDM in spreg v1.8.1
+    sdm_model = ML_Lag(
+        y.values,
+        X.values,  # no constant added
+        w=your_weights_matrix_26_regions,
+        slx_lags=1,
+        name_y='Poverty_Level',
+        name_x=X_cols,  # matches X (no constant)
+        spat_diag=True
+    )
+
+    print(f"Model Title: {sdm_model.title}")
+    print(f"Dependent Variable: {sdm_model.name_y}")
+    print(f"Independent Variables (X): {sdm_model.name_x}")
+    print(f"Number of Observations: {sdm_model.n}")
+
+    # Extract coefficients (rho + intercept + X + WX)
+    betas_sdm = sdm_model.betas.flatten()
+    vcov_sdm = sdm_model.vm
+    std_errs_sdm = np.sqrt(np.diag(vcov_sdm))
+
+    # Compute z-stats and p-values
+    z_stats_sdm = betas_sdm / std_errs_sdm
+    p_values_sdm = 2 * (1 - norm.cdf(np.abs(z_stats_sdm)))
+
+    # Coefficient names: rho, intercept, X_cols, W_X_cols
+    sdm_coeff_names = ["rho", "CONSTANT"] + X_cols + [f"W_{col}" for col in X_cols]
+
+    print("\nCoefficients:")
+    print(f"{'Variable':<25} {'Coef':>10} {'StdErr':>10} {'z-Stat':>10} {'p-value':>10}")
+    print("-" * 70)
+    # Ensure all names match the length of betas
+    if len(sdm_coeff_names) != len(betas_sdm):
+        # Fallback for names if there's a mismatch (e.g., if constant handling varies)
+        print("Warning: Mismatch between expected coefficient names and actual betas length. Using generic names.")
+        sdm_coeff_names = [f"Beta_{i}" for i in range(len(betas_sdm))]
+
+    for var, coef, std_err, z, p in zip(sdm_coeff_names, betas_sdm, std_errs_sdm, z_stats_sdm, p_values_sdm):
+        print(f"{var:<25} {coef:>10.4f} {std_err:>10.4f} {z:>10.4f} {p:>10.4f}")
+
+    # Log-likelihood
+    print(f"\nSDM Model Log-Likelihood: {sdm_model.logll:.4f}")
+
+    # AIC is available directly
+    print(f"SDM Model AIC: {sdm_model.aic:.4f}")
+
+    # BIC: manually compute
+    n_sdm = sdm_model.n
+    k_sdm = sdm_model.k  # k includes all estimated parameters: rho, intercept, X_vars, WX_vars
+    bic_sdm = k_sdm * np.log(n_sdm) - 2 * sdm_model.logll
+    print(f"SDM Model BIC (manually computed): {bic_sdm:.4f}")
+    print("=" * 70 + "\n")
+
+    print("\n" + "=" * 70)
+    print("--- Spatial Durbin Model (SDM) - Manual Impact Decomposition ---")
+    print("=" * 70)
+
+    # --- MANUAL SDM Impact Calculation ---
+    n = sdm_model.n
+    rho = sdm_model.betas[0][0]
+    b_d = sdm_model.betas[2:2 + len(X_cols)]  # Direct effects
+    b_i = sdm_model.betas[2 + len(X_cols):]  # Indirect effects
+
+    W = your_weights_matrix_26_regions.full()[0]
+    I = np.eye(n)
+    P = np.linalg.inv(I - rho * W)
+
+    direct_impacts = []
+    indirect_impacts = []
+    total_impacts = []
+
+    for i in range(len(X_cols)):
+        bd = b_d[i][0]
+        bi = b_i[i][0]
+
+        S = P @ (bd * np.eye(n) + bi * W)
+        direct = np.trace(S) / n
+        indirect = (np.sum(S) - np.trace(S)) / n
+        total = direct + indirect
+
+        direct_impacts.append(direct)
+        indirect_impacts.append(indirect)
+        total_impacts.append(total)
+
+    # Display
+    print(f"{'Variable':<30} {'Direct':>10} {'Indirect':>10} {'Total':>10}")
+    print("-" * 70)
+    for var, d, ind, tot in zip(X_cols, direct_impacts, indirect_impacts, total_impacts):
+        print(f"{var:<30} {d:>10.4f} {ind:>10.4f} {tot:>10.4f}")
+    print("=" * 70 + "\n")
+
+    # --- 5. Likelihood Ratio Test Results ---
+    print("\n" + "=" * 70)
+    print("--- Likelihood Ratio (LR) Test Results ---")
+    print("=" * 70)
+
+    # LR Test: SDM vs. SAR (Testing if WX_theta terms are jointly zero)
+    # In spreg, ML_Durbin (SDM) is the unrestricted model, ML_Lag (SAR) is the restricted model
+    lr_sdm_vs_sar = 2 * (sdm_model.logll - sar_model.logll)
+    df_sdm_vs_sar = len(X_cols)  # Number of WX terms
+    p_value_sdm_vs_sar = 1 - chi2.cdf(lr_sdm_vs_sar, df_sdm_vs_sar)
+    print(
+        f"LR Test (SDM vs. SAR): Statistic = {lr_sdm_vs_sar:.4f}, DF = {df_sdm_vs_sar}, p-value = {p_value_sdm_vs_sar:.4f}")
+
+    # LR Test: SDM vs. SEM (Testing if WX_theta terms and rho are jointly zero)
+    # Assumes SEM does not include lagged X or lagged Y (rho)
+    lr_sdm_vs_sem = 2 * (sdm_model.logll - sem_model.logll)
+    df_sdm_vs_sem = len(X_cols)  # Number of WX terms again assumed
+    p_value_sdm_vs_sem = 1 - chi2.cdf(lr_sdm_vs_sem, df_sdm_vs_sem)
+    print(
+        f"LR Test (SDM vs. SEM): Statistic = {lr_sdm_vs_sem:.4f}, DF = {df_sdm_vs_sem}, p-value = {p_value_sdm_vs_sem:.4f}")
+
+    print("=" * 70 + "\n")
 
 
-print("\n--- Spatial Durbin Model (SDM) ---")
-print(f"Model Title: {sdm_model.title}")
-print(f"Dependent Variable: {sdm_model.name_y}")
-print(f"Independent Variables (X): {sdm_model.name_x}")
-print(f"Number of Observations: {sdm_model.n}")
-print(f"Number of Estimated Coefficients (excluding rho): {sdm_model.k}")
+else:
+    print("\nSpatial models (SAR, SEM, SDM) skipped due to missing shapefile/weights matrix.")
 
-# Extract coefficients (rho + intercept + X + WX)
-betas = sdm_model.betas.flatten()
-vcov = sdm_model.vm  # variance-covariance matrix (k+1 x k+1)
-std_errs = np.sqrt(np.diag(vcov))
 
-# Compute z-stats and p-values
-z_stats = betas / std_errs
-p_values = 2 * (1 - norm.cdf(np.abs(z_stats)))
+if your_weights_matrix_26_regions:
+    print("\n" + "=" * 70)
+    print("--- Running Geographically Weighted Regression (GWR) ---")
+    print("=" * 70)
 
-# Coefficients, standard errors, and z-stats
-print("\nCoefficients:")
-for var, coef, std_err, z, p in zip(["rho"] + sdm_model.name_x, betas, std_errs, z_stats, p_values):
-    print(f"{var:<25} Coef: {coef:>10.4f} | StdErr: {std_err:>8.4f} | z-Stat: {z:>8.4f} (p={p:.4f})")
+    # Convert geometry to list of tuples for coords
+    if merged_gdf.geometry.crs and merged_gdf.geometry.crs.is_geographic:
+        print("Warning: GWR is best run on projected CRS, but using geographic for now.")
+    # Convert geometry to list of tuples for coords
+    coords = [tuple((geom.centroid.x, geom.centroid.y)) for geom in merged_gdf.geometry]
 
-# Spatial lag coefficient (rho)
-print(f"\nSpatial Lag Coefficient (rho): {sdm_model.betas.flatten()[0]:.4f}")
+    y_gwr = y.values.reshape(-1, 1)
+    X_gwr = sm.add_constant(X).values
 
-# Log-likelihood
-loglik_sdm = sdm_model.logll
-print(f"\nSDM Model Log-Likelihood: {loglik_sdm:.4f}")
+    # Use fixed bandwidth (distance-based kernel)
+    selector = Sel_BW(coords, y_gwr, X_gwr, fixed=True)  # <<< FIXED bandwidth
+    bw = selector.search()
 
-# AIC is available directly
-print(f"SDM Model AIC: {sdm_model.aic:.4f}")
+    print(f"Optimal fixed bandwidth: {bw:.4f}")
 
-# BIC: manually compute
-n = sdm_model.n
-k = sdm_model.k + 1 + len(X_cols)  # Intercept + X + WX + rho
-bic_sdm = k * np.log(n) - 2 * loglik_sdm
-print(f"SDM Model BIC (manually computed): {bic_sdm:.4f}")
-print("-" * 50)
+    # Fit the GWR model
+    gwr_model = GWR(coords, y_gwr, X_gwr, bw=bw, fixed=True)
+    gwr_results = gwr_model.fit()
+    print(gwr_results.summary())
 
-# --- 5. Extracting Likelihood Ratio Test Results (PySAL/spreg specific) ---
-# PySAL's spreg models store the results of some internal tests,
-# but direct 'anova' style comparison functions like in R might not be as explicit.
-# However, you can use the log-likelihood values to manually calculate LR tests
-# if spreg doesn't provide a direct function for comparison of arbitrary nested models.
+    # Local coefficients summary
+    local_coefs = gwr_results.params
+    gwr_variable_names = ['Intercept'] + X.columns.tolist()
 
-# Manual LR Test Calculation (for SDM vs SAR and SDM vs SEM)
-# LR test statistic = 2 * (LogLik_unrestricted - LogLik_restricted)
-# DF = difference in number of parameters
-
-print("\n--- Likelihood Ratio (LR) Test Results ---")
-
-# LR Test: SDM vs. SAR (Testing if WX_theta terms are jointly zero)
-# In spreg, ML_Durbin is the unrestricted model, ML_Lag (SAR) is the restricted model if WX_theta = 0.
-# The degrees of freedom for this test is the number of independent variables (X_cols)
-# because those are the additional terms in WX_theta compared to SAR.
-lr_sdm_vs_sar = 2 * (sdm_model.logll - sar_model.logll)
-df_sdm_vs_sar = len(X_cols)  # Number of additional parameters in WX_theta
-# You'd typically use a chi-squared distribution to get the p-value
-from scipy.stats import chi2
-
-p_value_sdm_vs_sar = 1 - chi2.cdf(lr_sdm_vs_sar, df_sdm_vs_sar)
-print(
-    f"LR Test (SDM vs. SAR): Statistic = {lr_sdm_vs_sar:.4f}, DF = {df_sdm_vs_sar}, p-value = {p_value_sdm_vs_sar:.4f}")
-
-# LR Test: SDM vs. SEM (Testing if WX_theta terms and rho (lagged Y) are jointly zero,
-# OR more commonly just WX_theta terms are zero and error model parameters are equivalent.)
-# This comparison is a bit more nuanced. A common test for SDM vs SEM in PySAL is the
-# `LR_SAR_diag` test within spreg if you ran an `OLS_lag_error` or similar.
-# For simplicity, if `spreg.diagnostics` doesn't provide a direct method for `ML_Durbin` vs `ML_Error`
-# that's explicitly testing for the spatially lagged X terms,
-# you can use the same logic as SDM vs SAR, recognizing that the "restricted" model is SEM.
-# The degrees of freedom would again be `len(X_cols)`.
-lr_sdm_vs_sem = 2 * (sdm_model.logll - sem_model.logll)
-df_sdm_vs_sem = len(X_cols)  # Assuming this is the difference in parameters due to WX_theta
-p_value_sdm_vs_sem = 1 - chi2.cdf(lr_sdm_vs_sem, df_sdm_vs_sem)
-print(
-    f"LR Test (SDM vs. SEM): Statistic = {lr_sdm_vs_sem:.4f}, DF = {df_sdm_vs_sem}, p-value = {p_value_sdm_vs_sem:.4f}")
-
-print("-" * 50)
+    print("\nSummary of GWR Local Coefficients:")
+    print("{:<25} {:<10} {:<10} {:<10}".format("Variable", "Mean", "Min", "Max"))
+    print("-" * 60)
+    for i, col_name in enumerate(gwr_variable_names):
+        mean_val = np.mean(local_coefs[:, i])
+        min_val = np.min(local_coefs[:, i])
+        max_val = np.max(local_coefs[:, i])
+        print(f"{col_name:<25} {mean_val:<10.4f} {min_val:<10.4f} {max_val:<10.4f}")
+    print("-" * 60)
+    print("=" * 70 + "\n")
+else:
+    print("\nGWR model skipped due to missing shapefile/weights matrix.")
