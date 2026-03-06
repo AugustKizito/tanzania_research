@@ -65,3 +65,11 @@ climate_poverty_analysis
 │
 └ supplementary
     └ Supplementary_Methods_Spatial_Econometric_Analysis.pdf
+  requirements.txt
+  numpy
+pandas
+geopandas
+pysal
+libpysal
+matplotlib
+scikit-learn
